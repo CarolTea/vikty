@@ -77,8 +77,12 @@ info:
     - **Idempotência:** `POST /operations` e `POST /operations/{id}/submit` exigem `Idempotency-Key`
       (UUID gerado pelo front por intenção). Mesma chave e mesmo corpo → mesmo resultado; corpo diferente →
       `409 IDEMPOTENCY_CONFLICT`. Clique duplo nunca cria duas compras.
-    - **Erros:** sempre o envelope `Error`; `message` já vem em português, pronta pra tela, e o front
+    - **Erros:** sempre o envelope `Error`; `message` vem em **inglês**, pronta pra tela, e o front
       decide o comportamento pelo `code`.
+    - **Idioma do que vai pra tela: inglês.** A interface do produto é em inglês. Todo texto que a API
+      devolve pra ser exibido — `error.message`, `ValidationIssue.message`, `limitations`, `rationale`,
+      `risks`, rótulos, `summary`, perguntas e opções da interpretação, textos do instrumento — vem em
+      inglês. Esta documentação é que está em português.
 
     ## Códigos de erro
 
@@ -127,24 +131,24 @@ tags:
       2. `GET /operations?active=true` (se houver wallet) → retoma a operação em andamento na Interface 9.
   - name: Interface 1 — Descoberta
     description: |
-      "No que você acredita?"
-      1. `GET /session` → `freeInterpretationAvailable` define se o botão é "Interpretar" ou
-         "Conectar wallet para interpretar"; `convictionMaxChars` é o limite do campo.
+      "What do you believe in?"
+      1. `GET /session` → `freeInterpretationAvailable` define se o botão é "Interpret" ou
+         "Connect wallet to interpret"; `convictionMaxChars` é o limite do campo.
       2. `GET /theses/suggested` → cartões de teses sugeridas.
-      3. `POST /interpretations` → ao clicar em "Interpretar" (com o token do Turnstile) → Interface 2.
+      3. `POST /interpretations` → ao clicar em "Interpret" (com o token do Turnstile) → Interface 2.
       4. `POST /events` → início de descoberta.
   - name: Interface 2 — Interpretação
     description: |
-      "Foi isso que entendemos." Recebe o resultado de `POST /interpretations`.
+      "Here's what we understood." Recebe o resultado de `POST /interpretations`.
       1. `PATCH /interpretations/{id}` → cada correção e cada resposta de ambiguidade.
-      2. `POST /proposals` → "Ver composição" (só com a interpretação pronta) → Interface 3.
+      2. `POST /proposals` → "See composition" (só com a interpretação pronta) → Interface 3.
   - name: Interface 3 — Composição
     description: |
       Recebe o resultado de `POST /proposals`.
       - `POST /proposals/validate` → a cada edição de peso, rejeição ou orçamento (com debounce).
-      - `GET /instruments/{id}` → "Detalhes do instrumento" (Interface 4).
-      - "Investir" num ativo sem wallet → Interfaces 5 e 6 (Privy) → Interface 7.
-      - "Investir" com plano ativo → Interface 8.
+      - `GET /instruments/{id}` → "Instrument details" (Interface 4).
+      - "Invest" num ativo sem wallet → Interfaces 5 e 6 (Privy) → Interface 7.
+      - "Invest" com plano ativo → Interface 8.
   - name: Interface 4 — Detalhe do instrumento
     description: Painel lateral com o que o instrumento representa, emissor, riscos, custos e evidências.
   - name: Interfaces 5 e 6 — Conectar wallet e entrar
@@ -176,9 +180,9 @@ tags:
     description: |
       - `GET /plans/current` → o plano.
       - `GET /plans/current/position` → posição, planejado vs atual, limitações.
-      - `POST /plans/current/reconcile` → "atualizar dados"; depois `position` de novo.
+      - `POST /plans/current/reconcile` → "Refresh data"; depois `position` de novo.
       - `PUT /plans/{id}` → editar pesos, rejeições ou orçamento do plano ativo.
-      - "Comprar" um item pendente → Interface 8 · "Vender" → Interface 10.
+      - "Buy" num item pendente → Interface 8 · "Sell" → Interface 10.
   - name: Interface 12 — Atividade
     description: "`GET /activity` → paginado por cursor."
   - name: Todas as telas
@@ -264,9 +268,9 @@ paths:
               example:
                 items:
                   - id: th_ai_infra
-                    title: Infraestrutura para IA
-                    summary: Chips, data centers e energia que sustentam a IA.
-                    text: IA vai redefinir a infraestrutura de data centers nos próximos 5 anos.
+                    title: AI infrastructure
+                    summary: Chips, data centers and the energy that power AI.
+                    text: AI will reshape data center infrastructure over the next 5 years.
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /interpretations:
@@ -301,7 +305,7 @@ paths:
               textoLivre:
                 value:
                   source: free_text
-                  text: IA vai redefinir a infraestrutura de data centers nos próximos 5 anos, mas não quero depender de uma única empresa.
+                  text: AI will reshape data center infrastructure over the next 5 years, but I don't want to depend on a single company.
                   botCheckToken: 0.turnstile-token-exemplo
                   deviceHash: 9f2c1e7ab3
               teseSugerida:
@@ -316,20 +320,20 @@ paths:
                 id: int_9a2
                 source: free_text
                 curated: false
-                summary: Crescimento da demanda por infraestrutura física de IA.
+                summary: Growing demand for physical AI infrastructure.
                 exposures:
-                  - { id: exp_semis_ai, label: Semicondutores para IA }
+                  - { id: exp_semis_ai, label: AI semiconductors }
                   - { id: exp_datacenter, label: Data centers }
                 exclusions:
-                  - { id: exc_1, label: Não depender de uma única empresa }
+                  - { id: exc_1, label: Don't depend on a single company }
                 restrictions: []
                 ambiguities:
                   - id: amb_1
-                    question: Energia para data centers entra na tese?
+                    question: Should energy for data centers be part of the thesis?
                     material: true
                     options:
-                      - { id: 'yes', label: 'Sim, incluir' }
-                      - { id: 'no', label: 'Não, só computação' }
+                      - { id: 'yes', label: 'Yes, include it' }
+                      - { id: 'no', label: 'No, compute only' }
                     answer: null
                 representation: sufficient
                 limitations: []
@@ -361,8 +365,8 @@ paths:
             example:
               answers: [{ ambiguityId: amb_1, optionId: 'yes' }]
               removeExposureIds: [exp_datacenter]
-              addExclusions: [Nada ligado a combustíveis fósseis]
-              addRestrictions: [Máximo de 30% por ativo]
+              addExclusions: [Nothing tied to fossil fuels]
+              addRestrictions: [Max 30% per asset]
       responses:
         '200':
           description: Interpretação atualizada
@@ -913,7 +917,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example:
-            error: { code: TEXT_TOO_LONG, message: 'Sua tese passou de 600 caracteres.', retryAfter: null, details: { max: 600 } }
+            error: { code: TEXT_TOO_LONG, message: 'Your thesis is over 600 characters.', retryAfter: null, details: { max: 600 } }
     Unauthorized:
       description: '`UNAUTHENTICATED`'
       content:
@@ -925,7 +929,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example:
-            error: { code: ANON_QUOTA_USED, message: 'Você já usou sua interpretação gratuita. Conecte a wallet para interpretar de novo.', retryAfter: null, details: {} }
+            error: { code: ANON_QUOTA_USED, message: 'You have used your free interpretation. Connect your wallet to interpret again.', retryAfter: null, details: {} }
     NotFound:
       description: '`NOT_FOUND` — inexistente ou de outra wallet'
       content:
@@ -950,7 +954,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example:
-            error: { code: RATE_LIMITED, message: 'Muitas tentativas seguidas. Tente de novo em 30 s.', retryAfter: 30, details: {} }
+            error: { code: RATE_LIMITED, message: 'Too many attempts in a row. Try again in 30 s.', retryAfter: 30, details: {} }
     ServiceUnavailable:
       description: '`AI_UNAVAILABLE` · `UPSTREAM_UNAVAILABLE`'
       content:
@@ -1008,7 +1012,7 @@ components:
                 - RATE_LIMITED
                 - AI_UNAVAILABLE
                 - UPSTREAM_UNAVAILABLE
-            message: { type: string, description: 'Mensagem em português, pronta pra tela.' }
+            message: { type: string, description: 'Mensagem em inglês, pronta pra tela.' }
             retryAfter: { type: [integer, 'null'], description: 'Segundos, quando aplicável.' }
             details: { type: object, additionalProperties: true }
     Quota:
@@ -1391,7 +1395,7 @@ components:
         side: { type: string, enum: [buy, sell] }
         instrument: { $ref: '#/components/schemas/InstrumentSummary' }
         status: { $ref: '#/components/schemas/OperationStatus' }
-        balanceUpdating: { type: boolean, description: '"Confirmada, atualizando saldo".' }
+        balanceUpdating: { type: boolean, description: 'Confirmada on-chain, saldo ainda atualizando ("Confirmed, updating balance").' }
         review:
           oneOf:
             - type: 'null'
