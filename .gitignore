@@ -40,6 +40,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# ----- Rust / Solana programs (Anchor) -----
+target/
+**/*.rs.bk
+.anchor/
+test-ledger/
+
 # ----- Python (in case the backend goes that way) -----
 __pycache__/
 *.py[cod]
