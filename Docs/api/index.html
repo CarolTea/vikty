@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VicTy API (MVP)</title>
+  <meta name="description" content="Contrato de API entre frontend e backend da VicTy.">
+</head>
+<body>
+  <div id="app"></div>
+  <!-- Scalar renderiza o openapi.yaml ao lado. Versão fixada pra o visual não mudar sozinho. -->
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.71.0"></script>
+  <script>
+    Scalar.createApiReference('#app', {
+      url: './openapi.yaml',
+      theme: 'default',
+      layout: 'modern',
+      hideClientButton: false,
+      defaultOpenAllTags: false,
+      metaData: { title: 'VicTy API (MVP)' },
+      // Tabelas da introdução: cabeçalho, 1ª coluna (#, HTTP) e rotas/códigos não quebram no meio;
+      // se faltar espaço, a tabela rola na horizontal.
+      customCss: [
+        // Introdução em coluna única: as tabelas ganham a largura toda; os cartões de servidor/auth vão pra baixo.
+        '.introduction-section .section-columns { flex-direction: column !important; }',
+        '.introduction-section .section-column { width: 100% !important; max-width: none !important; }',
+        'table { display: block !important; overflow-x: auto !important; }',
+        'table th, table td { word-break: normal !important; overflow-wrap: normal !important; }',
+        'table th, table td:first-child, table td code { white-space: nowrap !important; }',
+        'table td:nth-child(3) { min-width: 16em !important; }',
+      ].join(' '),
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1495 @@
+openapi: 3.1.0
+info:
+  title: VicTy API (MVP)
+  version: 0.1.0-draft
+  description: |
+    Contrato entre frontend e backend da VicTy: as rotas, o que cada uma recebe e o que devolve.
+    Serve pra front e back trabalharem em paralelo sem ficar corrigindo rota e parâmetro depois.
+    Base: PRD do MVP (§7 jornada, §8 acompanhamento, §9 IA e validação, §11 arquitetura, §12 estados e segurança).
+
+    - **Este arquivo é o contrato.** Mudou contrato → muda aqui primeiro, num PR, e o outro lado revisa.
+      Os tipos do front e do back podem ser gerados dele (ex.: `openapi-typescript`, `orval`).
+    - **Só MVP.** Nada de rota pra itens pós-MVP (histórico visual de versões, sugestões de ajuste, gráficos).
+    - **Integrações externas ficam atrás do backend.** O front nunca chama Jupiter, RPC ou IA direto.
+      Campos que vêm da Jupiter estão marcados *(Jupiter)*; o mapeamento exato é confirmado quando a
+      integração for validada.
+    - **Status:** rascunho de 2026-09-23.
+
+    ## Wallet e login: Privy
+
+    - **Conexão de wallet:** modal do Privy, configurado **só com wallet externa de Solana** (Phantom,
+      Solflare, Backpack e outras): sem e-mail, sem login social e sem wallet embutida.
+    - **Login:** o Privy faz o Sign-In With Solana — assinatura de **mensagem**, que não movimenta fundos e
+      é sempre separada da assinatura de compra/venda — e entrega um access token ao front.
+    - **Por que o backend precisa saber quem é:** o PRD exige plano persistente associado à wallet,
+      acessível só por quem prova que controla a wallet (RF-23), e quota de IA por wallet autenticada.
+    - **Como o backend sabe:** rotas autenticadas recebem `Authorization: Bearer <access token do Privy>`.
+      O backend verifica o token com o SDK de servidor do Privy e usa a wallet Solana vinculada a ele —
+      nunca uma wallet enviada no corpo. **Não há rota de login nem de logout nesta API.**
+    - **Desconectar ou trocar de wallet:** o front chama o logout do Privy e limpa todo o estado da wallet
+      anterior (plano, cotações, operações preparadas).
+    - **Sessão anônima:** antes de conectar, o backend emite um cookie de sessão anônima
+      (`HttpOnly; Secure; SameSite=Lax`) no primeiro `GET /session`, pra contar a interpretação gratuita e
+      os limites de uso.
+
+    ## Lista de endpoints
+
+    **Auth:** `—` sessão anônima basta · `W` exige token do Privy.
+
+    | # | Método e rota | Pra quê | Auth | Interfaces |
+    |---|---|---|---|---|
+    | 01 | `GET /session` | Estado da sessão: quota, wallet autenticada, plano ativo, limites | — | todas (ao abrir o app) |
+    | 02 | `GET /theses/suggested` | Teses sugeridas (curadas) | — | 1 |
+    | 03 | `POST /interpretations` | Interpretar uma convicção (texto livre ou tese sugerida) | — | 1 |
+    | 04 | `PATCH /interpretations/{id}` | Corrigir a interpretação e responder ambiguidades | — | 2 |
+    | 05 | `POST /proposals` | Gerar a composição a partir da interpretação confirmada | — | 2 |
+    | 06 | `POST /proposals/validate` | Validar pesos, rejeições e orçamento editados | — | 3 |
+    | 07 | `GET /instruments/{id}` | Detalhe de um instrumento aprovado | — | 3, 4 |
+    | 08 | `GET /wallet/balances` | Saldos da wallet autenticada | W | 7, 8 |
+    | 09 | `POST /plans` | Salvar o rascunho como plano da wallet | W | 5/6 → 7 |
+    | 10 | `GET /plans/current` | Plano da wallet | W | 7, 11 |
+    | 11 | `PUT /plans/{id}` | Alterar pesos, rejeições e orçamento (gera nova versão) | W | 11 |
+    | 12 | `POST /plans/{id}/activate` | Confirmar o escopo dos saldos acompanhados e ativar o plano | W | 7 |
+    | 13 | `POST /operations` | Preparar uma compra ou venda (cotação e transação pra revisão) | W | 8, 10 |
+    | 14 | `POST /operations/{id}/refresh-quote` | Nova cotação (expirada ou a pedido) | W | 8, 10 |
+    | 15 | `POST /operations/{id}/events` | Registrar "assinatura solicitada" ou "assinatura recusada" | W | 8, 10 |
+    | 16 | `POST /operations/{id}/submit` | Enviar a transação assinada | W | 8, 10 → 9 |
+    | 17 | `GET /operations/{id}` | Estado de uma operação | W | 9 |
+    | 18 | `GET /operations?active=true` | Operações em andamento (recuperar após recarregar) | W | 9 (ao abrir o app) |
+    | 19 | `GET /plans/current/position` | Posição: planejado vs atual, avaliação, limitações | W | 11 |
+    | 20 | `POST /plans/current/reconcile` | Pedir reconciliação com a blockchain | W | 11 |
+    | 21 | `GET /activity` | Histórico de operações e movimentos externos | W | 12 |
+    | 22 | `POST /events` | Eventos de analytics do front, sem texto livre | — | todas |
+
+    **Primeiro ciclo de compra real:** bastam as rotas 01, 07, 08 e 13–18, com um plano de teste montado
+    no banco. O front da compra pode andar antes da IA existir.
+
+    ## Convenções
+
+    - **Formato:** JSON UTF-8. Datas em ISO 8601 UTC. IDs são strings opacas com prefixo
+      (`plan_…`, `op_…`, `int_…`, `prop_…`, `ins_…`).
+    - **Dinheiro e quantidades nunca são `number` de ponto flutuante.** `Decimal` é string decimal
+      sem expoente (`"175.00"`); `Bps` é inteiro em pontos-base (`3500` = 35%), e os pesos de um plano
+      somam `10000`.
+    - **Autorização:** toda leitura e escrita é filtrada pela wallet do token; recurso de outra wallet
+      responde `404`, como se não existisse.
+    - **Cookies e CORS:** o front chama com `credentials: 'include'`; o backend aceita só as origens do app.
+    - **Idempotência:** `POST /operations` e `POST /operations/{id}/submit` exigem `Idempotency-Key`
+      (UUID gerado pelo front por intenção). Mesma chave e mesmo corpo → mesmo resultado; corpo diferente →
+      `409 IDEMPOTENCY_CONFLICT`. Clique duplo nunca cria duas compras.
+    - **Erros:** sempre o envelope `Error`; `message` já vem em português, pronta pra tela, e o front
+      decide o comportamento pelo `code`.
+
+    ## Códigos de erro
+
+    | HTTP | `code` | Quando |
+    |---|---|---|
+    | 400 | `VALIDATION_ERROR` | Corpo fora do schema; `details.fields` diz quais campos |
+    | 400 | `TEXT_TOO_LONG` | Convicção acima do limite; `details.max` |
+    | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido |
+    | 403 | `ANON_QUOTA_USED` | Interpretação gratuita já usada → front oferece conectar a wallet |
+    | 403 | `WALLET_QUOTA_USED` | Quota da wallet esgotada; `details.resetsAt` |
+    | 403 | `BOT_CHECK_FAILED` | Turnstile ausente ou inválido; `details.interactive: true` pede o desafio visível |
+    | 403 | `WALLET_MISMATCH` | Operação preparada pra outra wallet |
+    | 404 | `NOT_FOUND` | Recurso inexistente ou de outra wallet |
+    | 409 | `IDEMPOTENCY_CONFLICT` | Mesma `Idempotency-Key` com corpo diferente |
+    | 409 | `OPERATION_IN_PROGRESS` | Já existe operação ativa pro item; `details.operationId` |
+    | 409 | `QUOTE_EXPIRED` | Cotação vencida; pedir nova |
+    | 409 | `MATERIAL_CHANGE` | A nova cotação mudou de forma relevante; exige nova revisão |
+    | 409 | `ACTIVE_PLAN_EXISTS` | Já existe plano ativo; `details.activePlanId` |
+    | 422 | `PLAN_INVALID` | Validador reprovou; `details.validation` |
+    | 422 | `INSTRUMENT_NOT_APPROVED` / `INSTRUMENT_RESTRICTED` / `INSTRUMENT_SUSPENDED` | Instrumento não pode ser operado |
+    | 422 | `NO_ROUTE` | Sem rota agora pra essa direção e quantidade |
+    | 422 | `INSUFFICIENT_BALANCE` | Saldo real abaixo do necessário; `details.available` |
+    | 422 | `TRANSACTION_REJECTED` | A transação falhou na verificação do backend; não se pede assinatura |
+    | 429 | `RATE_LIMITED` | Muitas requisições; `retryAfter` em segundos (também no header `Retry-After`) |
+    | 503 | `AI_UNAVAILABLE` | IA fora; o front oferece tentar de novo ou usar uma tese sugerida |
+    | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter ou RPC fora ou em timeout |
+
+    ## Em aberto
+
+    1. **Editar uma tese sugerida consome a quota?** O contrato assume que editar vira `free_text` e
+       consome a interpretação.
+    2. **Plano ativo existente ao salvar um novo:** hoje `POST /plans` devolve `409 ACTIVE_PLAN_EXISTS`.
+    3. **Campos da Jupiter** em `Operation.review` e `Operation.result`: confirmados quando a integração for validada.
+    4. **Polling ou push** pro estado da operação: polling no MVP; push só se não bastar.
+    5. **Limites numéricos** (caracteres, peso máximo por ativo, quota por wallet): os valores daqui são
+       exemplos; os definitivos vêm de configuração.
+
+servers:
+  - url: /api/v1
+    description: Mesmo domínio do app
+
+tags:
+  - name: Ao abrir o app
+    description: |
+      1. `GET /session` → decide a tela inicial: plano ativo → Interface 11; senão → Interface 1.
+      2. `GET /operations?active=true` (se houver wallet) → retoma a operação em andamento na Interface 9.
+  - name: Interface 1 — Descoberta
+    description: |
+      "No que você acredita?"
+      1. `GET /session` → `freeInterpretationAvailable` define se o botão é "Interpretar" ou
+         "Conectar wallet para interpretar"; `convictionMaxChars` é o limite do campo.
+      2. `GET /theses/suggested` → cartões de teses sugeridas.
+      3. `POST /interpretations` → ao clicar em "Interpretar" (com o token do Turnstile) → Interface 2.
+      4. `POST /events` → início de descoberta.
+  - name: Interface 2 — Interpretação
+    description: |
+      "Foi isso que entendemos." Recebe o resultado de `POST /interpretations`.
+      1. `PATCH /interpretations/{id}` → cada correção e cada resposta de ambiguidade.
+      2. `POST /proposals` → "Ver composição" (só com a interpretação pronta) → Interface 3.
+  - name: Interface 3 — Composição
+    description: |
+      Recebe o resultado de `POST /proposals`.
+      - `POST /proposals/validate` → a cada edição de peso, rejeição ou orçamento (com debounce).
+      - `GET /instruments/{id}` → "Detalhes do instrumento" (Interface 4).
+      - "Investir" num ativo sem wallet → Interfaces 5 e 6 (Privy) → Interface 7.
+      - "Investir" com plano ativo → Interface 8.
+  - name: Interface 4 — Detalhe do instrumento
+    description: Painel lateral com o que o instrumento representa, emissor, riscos, custos e evidências.
+  - name: Interfaces 5 e 6 — Conectar wallet e entrar
+    description: |
+      Modal do Privy: conectar a wallet e fazer o Sign-In With Solana. Nenhuma rota nossa nesse passo.
+      1. Depois do login: `GET /session` (já autenticado) → wallet, quota e plano ativo.
+      2. Se havia rascunho: `POST /plans` → Interface 7.
+  - name: Interface 7 — Ativar plano
+    description: |
+      1. `GET /wallet/balances` → saldos, saldos preexistentes, reserva de SOL.
+      2. `GET /plans/current` → o rascunho salvo.
+      3. `POST /plans/{id}/activate` → confirmar os mints acompanhados e ativar.
+  - name: Interface 8 — Revisão da compra
+    description: |
+      1. `GET /wallet/balances` → saldo disponível (insuficiência aparece na revisão).
+      2. `POST /operations` (`side: "buy"`) → cotação, revisão e transação.
+      3. `POST /operations/{id}/refresh-quote` → cotação expirada ou "atualizar".
+      4. `POST /operations/{id}/events` → `signature_requested` ao abrir a wallet; `signature_rejected` se o usuário recusar.
+      5. Assinatura na wallet externa (SDK do Privy) → `POST /operations/{id}/submit` → Interface 9.
+  - name: Interface 9 — Operação em andamento
+    description: |
+      - `GET /operations/{id}` → polling até o estado final.
+      - `GET /operations?active=true` → recuperação após recarregar.
+  - name: Interface 10 — Venda
+    description: |
+      `POST /operations` (`side: "sell"`, quantidade ou percentual) → `refresh-quote` → `events` →
+      assinatura → `submit` → Interface 9.
+  - name: Interface 11 — Acompanhamento
+    description: |
+      - `GET /plans/current` → o plano.
+      - `GET /plans/current/position` → posição, planejado vs atual, limitações.
+      - `POST /plans/current/reconcile` → "atualizar dados"; depois `position` de novo.
+      - `PUT /plans/{id}` → editar pesos, rejeições ou orçamento do plano ativo.
+      - "Comprar" um item pendente → Interface 8 · "Vender" → Interface 10.
+  - name: Interface 12 — Atividade
+    description: "`GET /activity` → paginado por cursor."
+  - name: Todas as telas
+    description: Rotas usadas em qualquer tela.
+
+x-tagGroups:
+  - name: Por interface
+    tags:
+      - Ao abrir o app
+      - Interface 1 — Descoberta
+      - Interface 2 — Interpretação
+      - Interface 3 — Composição
+      - Interface 4 — Detalhe do instrumento
+      - Interfaces 5 e 6 — Conectar wallet e entrar
+      - Interface 7 — Ativar plano
+      - Interface 8 — Revisão da compra
+      - Interface 9 — Operação em andamento
+      - Interface 10 — Venda
+      - Interface 11 — Acompanhamento
+      - Interface 12 — Atividade
+      - Todas as telas
+
+paths:
+  /session:
+    get:
+      operationId: getSession
+      summary: 01 · Estado da sessão
+      description: |
+        Chamado ao abrir o app e depois de conectar ou desconectar a wallet. Cria a sessão anônima se
+        não existir. Com token do Privy, inclui os dados da wallet.
+      tags: [Ao abrir o app, Interface 1 — Descoberta, Interfaces 5 e 6 — Conectar wallet e entrar]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      responses:
+        '200':
+          description: Sessão atual
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+              examples:
+                anonima:
+                  summary: Sem wallet
+                  value:
+                    anonymous: { freeInterpretationAvailable: true }
+                    wallet: null
+                    activePlanId: null
+                    activeOperationIds: []
+                    limits: { convictionMaxChars: 600 }
+                comWallet:
+                  summary: Wallet autenticada
+                  value:
+                    anonymous: { freeInterpretationAvailable: false }
+                    wallet:
+                      address: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      network: solana-mainnet
+                      quota: { limit: 20, remaining: 18, resetsAt: '2026-09-24T00:00:00Z' }
+                    activePlanId: plan_7d1
+                    activeOperationIds: []
+                    limits: { convictionMaxChars: 600 }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /theses/suggested:
+    get:
+      operationId: listSuggestedTheses
+      summary: 02 · Teses sugeridas
+      description: 2–3 teses curadas, só as que o catálogo consegue representar. Não consome quota de IA.
+      tags: [Interface 1 — Descoberta]
+      security:
+        - anonymousSession: []
+      responses:
+        '200':
+          description: Teses sugeridas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SuggestedThesis' }
+              example:
+                items:
+                  - id: th_ai_infra
+                    title: Infraestrutura para IA
+                    summary: Chips, data centers e energia que sustentam a IA.
+                    text: IA vai redefinir a infraestrutura de data centers nos próximos 5 anos.
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /interpretations:
+    post:
+      operationId: createInterpretation
+      summary: 03 · Interpretar uma convicção
+      description: |
+        - `suggested` sem edição → interpretação curada, **sem IA e sem quota**.
+        - `free_text` sem wallet → consome a interpretação gratuita (exige `botCheckToken`).
+          Com wallet → consome a quota da wallet.
+        - `representation: "insufficient"` **não é erro**: é `200` com `limitations` explicando.
+          Ausência de representação é uma resposta válida.
+        - O texto original não é devolvido nem vai pra analytics.
+      tags: [Interface 1 — Descoberta]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/InterpretationFromText'
+                - $ref: '#/components/schemas/InterpretationFromSuggested'
+              discriminator:
+                propertyName: source
+                mapping:
+                  free_text: '#/components/schemas/InterpretationFromText'
+                  suggested: '#/components/schemas/InterpretationFromSuggested'
+            examples:
+              textoLivre:
+                value:
+                  source: free_text
+                  text: IA vai redefinir a infraestrutura de data centers nos próximos 5 anos, mas não quero depender de uma única empresa.
+                  botCheckToken: 0.turnstile-token-exemplo
+                  deviceHash: 9f2c1e7ab3
+              teseSugerida:
+                value: { source: suggested, suggestedThesisId: th_ai_infra }
+      responses:
+        '200':
+          description: Interpretação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Interpretation' }
+              example:
+                id: int_9a2
+                source: free_text
+                curated: false
+                summary: Crescimento da demanda por infraestrutura física de IA.
+                exposures:
+                  - { id: exp_semis_ai, label: Semicondutores para IA }
+                  - { id: exp_datacenter, label: Data centers }
+                exclusions:
+                  - { id: exc_1, label: Não depender de uma única empresa }
+                restrictions: []
+                ambiguities:
+                  - id: amb_1
+                    question: Energia para data centers entra na tese?
+                    material: true
+                    options:
+                      - { id: 'yes', label: 'Sim, incluir' }
+                      - { id: 'no', label: 'Não, só computação' }
+                    answer: null
+                representation: sufficient
+                limitations: []
+                status: needs_clarification
+                quota: { anonymousFreeUsed: true, wallet: null }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /interpretations/{id}:
+    patch:
+      operationId: updateInterpretation
+      summary: 04 · Corrigir a interpretação
+      description: |
+        Correções e respostas **estruturadas**: não chamam a IA e não consomem quota. `status` vira
+        `ready` quando não há ambiguidade material aberta.
+      tags: [Interface 2 — Interpretação]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InterpretationPatch' }
+            example:
+              answers: [{ ambiguityId: amb_1, optionId: 'yes' }]
+              removeExposureIds: [exp_datacenter]
+              addExclusions: [Nada ligado a combustíveis fósseis]
+              addRestrictions: [Máximo de 30% por ativo]
+      responses:
+        '200':
+          description: Interpretação atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Interpretation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /proposals:
+    post:
+      operationId: createProposal
+      summary: 05 · Gerar a composição
+      description: Exige interpretação com `status` = `ready`. Não consome quota adicional.
+      tags: [Interface 2 — Interpretação]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [interpretationId, budgetUsdc]
+              properties:
+                interpretationId: { type: string, example: int_9a2 }
+                budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+            example: { interpretationId: int_9a2, budgetUsdc: '500.00' }
+      responses:
+        '200':
+          description: Proposta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Proposal' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /proposals/validate:
+    post:
+      operationId: validateProposal
+      summary: 06 · Validar o rascunho editado
+      description: |
+        Validação determinística. Funciona sem wallet. **Não redistribui pesos**: só diz o que está
+        válido ou não; quem ajusta é o usuário. Instrumento fora da proposta de origem → issue
+        `INCOMPATIBLE_SUBSTITUTION`.
+      tags: [Interface 3 — Composição]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlanDraftInput' }
+            example:
+              proposalId: prop_41c
+              budgetUsdc: '500.00'
+              items:
+                - { instrumentId: ins_semix, weightBps: 3500, state: active }
+                - { instrumentId: ins_dcx, weightBps: 0, state: rejected }
+                - { instrumentId: ins_pwre, weightBps: 2000, state: active }
+                - { instrumentId: ins_usdc, weightBps: 1500, state: active }
+      responses:
+        '200':
+          description: Resultado da validação, com `plannedUsdc` recalculado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [validation, items]
+                properties:
+                  validation: { $ref: '#/components/schemas/Validation' }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProposalItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /instruments/{id}:
+    get:
+      operationId: getInstrument
+      summary: 07 · Detalhe de um instrumento
+      tags: [Interface 3 — Composição, Interface 4 — Detalhe do instrumento]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Detalhe do instrumento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InstrumentDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /wallet/balances:
+    get:
+      operationId: getWalletBalances
+      summary: 08 · Saldos da wallet
+      description: Tokens fora do catálogo aparecem com `inCatalog` = `false` e nunca entram na composição.
+      tags: [Interface 7 — Ativar plano, Interface 8 — Revisão da compra]
+      security:
+        - privyToken: []
+      responses:
+        '200':
+          description: Saldos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Balances' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /plans:
+    post:
+      operationId: createPlan
+      summary: 09 · Salvar o rascunho como plano
+      tags: [Interfaces 5 e 6 — Conectar wallet e entrar]
+      security:
+        - privyToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlanDraftInput' }
+      responses:
+        '201':
+          description: Plano criado como rascunho
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Plan' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /plans/current:
+    get:
+      operationId: getCurrentPlan
+      summary: 10 · Plano da wallet
+      description: O plano ativo, ou o rascunho mais recente. `404` se a wallet não tem plano.
+      tags: [Interface 7 — Ativar plano, Interface 11 — Acompanhamento]
+      security:
+        - privyToken: []
+      responses:
+        '200':
+          description: Plano
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Plan' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /plans/{id}:
+    put:
+      operationId: updatePlan
+      summary: 11 · Alterar o plano (nova versão)
+      description: Gera `version` + 1. Operações já feitas não são reescritas.
+      tags: [Interface 11 — Acompanhamento]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [budgetUsdc, items]
+              properties:
+                budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+                items:
+                  type: array
+                  items: { $ref: '#/components/schemas/PlanItemInput' }
+      responses:
+        '200':
+          description: Plano atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Plan' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /plans/{id}/activate:
+    post:
+      operationId: activatePlan
+      summary: 12 · Ativar o plano e o escopo dos saldos
+      description: |
+        Saldos preexistentes entram sem custo inventado. Mudar o escopo depois é uma nova chamada, registrada.
+      tags: [Interface 7 — Ativar plano]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackedMints, confirmPreexistingBalances]
+              properties:
+                trackedMints:
+                  type: array
+                  items: { type: string }
+                confirmPreexistingBalances: { type: boolean }
+      responses:
+        '200':
+          description: Plano ativo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Plan' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /operations:
+    post:
+      operationId: prepareOperation
+      summary: 13 · Preparar compra ou venda
+      description: |
+        Cota, valida e devolve a transação pra revisão. **Não** pede assinatura. Antes de devolver, o
+        backend verifica a transação: mints aprovados, destinatário = wallet do token, programas
+        permitidos, valores dentro da cotação.
+      tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/BuyInput'
+                - $ref: '#/components/schemas/SellInput'
+              discriminator:
+                propertyName: side
+                mapping:
+                  buy: '#/components/schemas/BuyInput'
+                  sell: '#/components/schemas/SellInput'
+            examples:
+              compra:
+                value: { planId: plan_7d1, side: buy, instrumentId: ins_semix, inputUsdc: '175.00' }
+              vendaPorQuantidade:
+                value: { planId: plan_7d1, side: sell, instrumentId: ins_semix, quantity: '0.52' }
+              vendaPorPercentual:
+                value: { planId: plan_7d1, side: sell, instrumentId: ins_semix, percentBps: 5000 }
+      responses:
+        '200':
+          description: Operação pronta pra revisão (`ready_for_review`), com `review` e `transaction`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+    get:
+      operationId: listActiveOperations
+      summary: 18 · Operações em andamento
+      description: |
+        Com `active=true`, devolve as operações com status fora de `confirmed`, `failed`, `rejected` e
+        `expired`. Usada ao abrir o app, pra recuperar operação após recarregar.
+      tags: [Ao abrir o app, Interface 9 — Operação em andamento]
+      security:
+        - privyToken: []
+      parameters:
+        - name: active
+          in: query
+          required: true
+          schema: { type: boolean, const: true }
+      responses:
+        '200':
+          description: Operações ativas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Operation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /operations/{id}/refresh-quote:
+    post:
+      operationId: refreshQuote
+      summary: 14 · Nova cotação
+      description: |
+        Nova `review` e nova `transaction`. Mudança relevante em relação à revisão anterior →
+        `409 MATERIAL_CHANGE` com `details.operation` (o usuário revisa de novo).
+      tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Operação com nova cotação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /operations/{id}/events:
+    post:
+      operationId: recordSignatureEvent
+      summary: 15 · Assinatura solicitada ou recusada
+      description: Recusa não registra compra.
+      tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string, enum: [signature_requested, signature_rejected] }
+      responses:
+        '200':
+          description: Operação em `awaiting_signature` ou `rejected`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /operations/{id}/submit:
+    post:
+      operationId: submitOperation
+      summary: 16 · Enviar a transação assinada
+      description: |
+        O backend registra a assinatura **antes** de esperar a resposta da Jupiter *(Jupiter `/execute`)*.
+        Timeout **não** é falha: a operação fica `pending` ou `reconciling` e o front acompanha por
+        `GET /operations/{id}`. Transação assinada diferente da preparada → `422 TRANSACTION_REJECTED`.
+      tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [signedTransaction]
+              properties:
+                signedTransaction: { type: string, description: Transação assinada em base64 }
+      responses:
+        '202':
+          description: Operação em `sending` ou `pending`
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
+
+  /operations/{id}:
+    get:
+      operationId: getOperation
+      summary: 17 · Estado de uma operação
+      description: |
+        O front consulta a cada 2 s enquanto o status for `sending`, `pending` ou `reconciling`, até 2 min;
+        depois, a cada 10 s. `confirmed` só com confirmação on-chain.
+      tags: [Interface 9 — Operação em andamento]
+      security:
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Operação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /plans/current/position:
+    get:
+      operationId: getPosition
+      summary: 19 · Posição do plano
+      description: |
+        - Preço ausente → `price.valid` = `false` e `valuationUsd` = `null`; se o saldo for relevante,
+          `composition.available` = `false` com `reason`.
+        - Custo desconhecido → `cost.known` = `false` e `resultUsd` = `null`. Nenhum resultado inventado.
+        - Ativo rejeitado que ainda tem posição continua na lista, com `state` = `rejected`.
+      tags: [Interface 11 — Acompanhamento]
+      security:
+        - privyToken: []
+      responses:
+        '200':
+          description: Posição
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Position' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /plans/current/reconcile:
+    post:
+      operationId: reconcilePlan
+      summary: 20 · Pedir reconciliação
+      description: O front busca a posição de novo em seguida.
+      tags: [Interface 11 — Acompanhamento]
+      security:
+        - privyToken: []
+      responses:
+        '202':
+          description: Reconciliação iniciada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [startedAt]
+                properties:
+                  startedAt: { type: string, format: date-time }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+
+  /activity:
+    get:
+      operationId: listActivity
+      summary: 21 · Histórico de atividade
+      tags: [Interface 12 — Atividade]
+      security:
+        - privyToken: []
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Página de atividade
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ActivityItem' }
+                  nextCursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /events:
+    post:
+      operationId: trackEvents
+      summary: 22 · Eventos de analytics
+      description: |
+        `name` numa lista fechada; `props` sem texto livre de convicção e sem endereço de wallet. Eventos
+        que o backend já conhece (proposta gerada, operação confirmada) são emitidos por ele mesmo.
+      tags: [Interface 1 — Descoberta, Todas as telas]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [name, at]
+                    properties:
+                      name:
+                        type: string
+                        enum:
+                          - discovery_started
+                          - suggested_thesis_selected
+                          - interpretation_corrected
+                          - asset_rejected
+                          - weight_changed
+                          - operation_review_started
+                      at: { type: string, format: date-time }
+                      props:
+                        type: object
+                        additionalProperties:
+                          type: [string, number, boolean]
+            example:
+              events:
+                - { name: discovery_started, at: '2026-09-23T14:00:00Z', props: { source: suggested } }
+      responses:
+        '204': { description: Eventos aceitos }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+  securitySchemes:
+    privyToken:
+      type: http
+      scheme: bearer
+      description: Access token do Privy (login por Sign-In With Solana). O backend verifica com o SDK de servidor do Privy.
+    anonymousSession:
+      type: apiKey
+      in: cookie
+      name: victy_session
+      description: Cookie de sessão anônima (`HttpOnly; Secure; SameSite=Lax`) emitido no primeiro `GET /session`.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID gerado pelo front por intenção; o mesmo nas retentativas.
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: '`VALIDATION_ERROR` · `TEXT_TOO_LONG`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: { code: TEXT_TOO_LONG, message: 'Sua tese passou de 600 caracteres.', retryAfter: null, details: { max: 600 } }
+    Unauthorized:
+      description: '`UNAUTHENTICATED`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: '`ANON_QUOTA_USED` · `WALLET_QUOTA_USED` · `BOT_CHECK_FAILED` · `WALLET_MISMATCH`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: { code: ANON_QUOTA_USED, message: 'Você já usou sua interpretação gratuita. Conecte a wallet para interpretar de novo.', retryAfter: null, details: {} }
+    NotFound:
+      description: '`NOT_FOUND` — inexistente ou de outra wallet'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: '`IDEMPOTENCY_CONFLICT` · `OPERATION_IN_PROGRESS` · `QUOTE_EXPIRED` · `MATERIAL_CHANGE` · `ACTIVE_PLAN_EXISTS`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unprocessable:
+      description: '`PLAN_INVALID` · `INSTRUMENT_NOT_APPROVED` · `INSTRUMENT_RESTRICTED` · `INSTRUMENT_SUSPENDED` · `NO_ROUTE` · `INSUFFICIENT_BALANCE` · `TRANSACTION_REJECTED`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:
+      description: '`RATE_LIMITED`'
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: { code: RATE_LIMITED, message: 'Muitas tentativas seguidas. Tente de novo em 30 s.', retryAfter: 30, details: {} }
+    ServiceUnavailable:
+      description: '`AI_UNAVAILABLE` · `UPSTREAM_UNAVAILABLE`'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Decimal:
+      type: string
+      pattern: '^-?\d+(\.\d+)?$'
+      description: Número decimal como string, sem expoente. Nunca ponto flutuante.
+      example: '175.00'
+    Bps:
+      type: integer
+      minimum: 0
+      maximum: 10000
+      description: Pontos-base; 3500 = 35%.
+      example: 3500
+    SignedBps:
+      type: integer
+      minimum: -10000
+      maximum: 10000
+      description: Diferença em pontos-base (pode ser negativa).
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - TEXT_TOO_LONG
+                - UNAUTHENTICATED
+                - ANON_QUOTA_USED
+                - WALLET_QUOTA_USED
+                - BOT_CHECK_FAILED
+                - WALLET_MISMATCH
+                - NOT_FOUND
+                - IDEMPOTENCY_CONFLICT
+                - OPERATION_IN_PROGRESS
+                - QUOTE_EXPIRED
+                - MATERIAL_CHANGE
+                - ACTIVE_PLAN_EXISTS
+                - PLAN_INVALID
+                - INSTRUMENT_NOT_APPROVED
+                - INSTRUMENT_RESTRICTED
+                - INSTRUMENT_SUSPENDED
+                - NO_ROUTE
+                - INSUFFICIENT_BALANCE
+                - TRANSACTION_REJECTED
+                - RATE_LIMITED
+                - AI_UNAVAILABLE
+                - UPSTREAM_UNAVAILABLE
+            message: { type: string, description: 'Mensagem em português, pronta pra tela.' }
+            retryAfter: { type: [integer, 'null'], description: 'Segundos, quando aplicável.' }
+            details: { type: object, additionalProperties: true }
+    Quota:
+      type: object
+      required: [limit, remaining, resetsAt]
+      properties:
+        limit: { type: integer }
+        remaining: { type: integer }
+        resetsAt: { type: string, format: date-time }
+    Session:
+      type: object
+      required: [anonymous, wallet, activePlanId, activeOperationIds, limits]
+      properties:
+        anonymous:
+          type: object
+          required: [freeInterpretationAvailable]
+          properties:
+            freeInterpretationAvailable: { type: boolean }
+        wallet:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [address, network, quota]
+              properties:
+                address: { type: string }
+                network: { type: string, example: solana-mainnet }
+                quota: { $ref: '#/components/schemas/Quota' }
+        activePlanId: { type: [string, 'null'] }
+        activeOperationIds:
+          type: array
+          items: { type: string }
+        limits:
+          type: object
+          required: [convictionMaxChars]
+          properties:
+            convictionMaxChars: { type: integer, example: 600 }
+    SuggestedThesis:
+      type: object
+      required: [id, title, summary, text]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        text: { type: string }
+    InterpretationFromText:
+      type: object
+      required: [source, text]
+      properties:
+        source: { type: string, const: free_text }
+        text: { type: string, maxLength: 600 }
+        botCheckToken: { type: string, description: Token do Cloudflare Turnstile; obrigatório sem wallet. }
+        deviceHash: { type: string, description: Hash do FingerprintJS v5. }
+    InterpretationFromSuggested:
+      type: object
+      required: [source, suggestedThesisId]
+      properties:
+        source: { type: string, const: suggested }
+        suggestedThesisId: { type: string }
+    LabeledItem:
+      type: object
+      required: [id, label]
+      properties:
+        id: { type: string }
+        label: { type: string }
+    Ambiguity:
+      type: object
+      required: [id, question, material, options, answer]
+      properties:
+        id: { type: string }
+        question: { type: string }
+        material: { type: boolean, description: 'Se true, a resposta muda a proposta e bloqueia seguir.' }
+        options:
+          type: array
+          items: { $ref: '#/components/schemas/LabeledItem' }
+        answer: { type: [string, 'null'], description: id da opção escolhida }
+    Interpretation:
+      type: object
+      required: [id, source, curated, summary, exposures, exclusions, restrictions, ambiguities, representation, limitations, status]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [free_text, suggested] }
+        curated: { type: boolean }
+        summary: { type: string }
+        exposures:
+          type: array
+          items: { $ref: '#/components/schemas/LabeledItem' }
+        exclusions:
+          type: array
+          items: { $ref: '#/components/schemas/LabeledItem' }
+        restrictions:
+          type: array
+          items: { $ref: '#/components/schemas/LabeledItem' }
+        ambiguities:
+          type: array
+          items: { $ref: '#/components/schemas/Ambiguity' }
+        representation:
+          type: string
+          enum: [sufficient, partial, insufficient]
+          description: '`insufficient` é resposta válida, não erro.'
+        limitations:
+          type: array
+          items: { type: string }
+        status: { type: string, enum: [needs_clarification, ready] }
+        quota:
+          type: object
+          properties:
+            anonymousFreeUsed: { type: boolean }
+            wallet:
+              oneOf:
+                - type: 'null'
+                - $ref: '#/components/schemas/Quota'
+    InterpretationPatch:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            required: [ambiguityId, optionId]
+            properties:
+              ambiguityId: { type: string }
+              optionId: { type: string }
+        removeExposureIds:
+          type: array
+          items: { type: string }
+        addExclusions:
+          type: array
+          items: { type: string, maxLength: 200 }
+        removeExclusionIds:
+          type: array
+          items: { type: string }
+        addRestrictions:
+          type: array
+          items: { type: string, maxLength: 200 }
+        removeRestrictionIds:
+          type: array
+          items: { type: string }
+    InstrumentSummary:
+      type: object
+      required: [id, symbol, name, mint, decimals, kind, status, exposureLabel, issuerName]
+      properties:
+        id: { type: string, example: ins_semix }
+        symbol: { type: string, example: SEMI-X }
+        name: { type: string }
+        mint: { type: string }
+        decimals: { type: integer }
+        kind: { type: string, enum: [token, cash], description: '`cash` = USDC' }
+        status: { type: string, enum: [approved, restricted, unavailable] }
+        exposureLabel: { type: string }
+        issuerName: { type: [string, 'null'] }
+    AvailabilityState:
+      type: string
+      enum: [available, no_route, suspended, restricted]
+    Availability:
+      type: object
+      required: [buy, sell, checkedAt]
+      description: Disponibilidade é momentânea; aprovado não significa rota disponível.
+      properties:
+        buy: { $ref: '#/components/schemas/AvailabilityState' }
+        sell: { $ref: '#/components/schemas/AvailabilityState' }
+        checkedAt: { type: string, format: date-time }
+    ProposalItem:
+      type: object
+      required: [instrument, exposureIds, weightBps, plannedUsdc, rationale, risks, availability, state]
+      properties:
+        instrument: { $ref: '#/components/schemas/InstrumentSummary' }
+        exposureIds:
+          type: array
+          items: { type: string }
+        weightBps: { $ref: '#/components/schemas/Bps' }
+        plannedUsdc: { $ref: '#/components/schemas/Decimal' }
+        rationale: { type: string, description: 'Baseado nas evidências do instrumento, não em afirmação livre da IA.' }
+        risks:
+          type: array
+          items: { type: string }
+        availability: { $ref: '#/components/schemas/Availability' }
+        state: { type: string, enum: [active, rejected] }
+    ValidationIssue:
+      type: object
+      required: [code, severity, instrumentId, message, params]
+      properties:
+        code:
+          type: string
+          enum: [SUM_NOT_100, WEIGHT_ABOVE_MAX, WEIGHT_BELOW_MIN, EXCLUSION_VIOLATED, INSTRUMENT_NOT_APPROVED, INCOMPATIBLE_SUBSTITUTION, BUDGET_INVALID, PARTIAL_REPRESENTATION, NO_ROUTE]
+        severity: { type: string, enum: [error, warning] }
+        instrumentId: { type: [string, 'null'] }
+        message: { type: string }
+        params:
+          type: object
+          additionalProperties:
+            type: [string, number]
+    Validation:
+      type: object
+      required: [valid, conclusive, totalBps, issues, policyVersion]
+      properties:
+        valid: { type: boolean, description: Pode investir. }
+        conclusive: { type: boolean, description: false → botão de investir bloqueado mesmo sem erro. }
+        totalBps: { type: integer }
+        issues:
+          type: array
+          items: { $ref: '#/components/schemas/ValidationIssue' }
+        policyVersion: { type: string }
+    Proposal:
+      type: object
+      required: [id, interpretationId, curated, budgetUsdc, items, validation, limitations]
+      properties:
+        id: { type: string }
+        interpretationId: { type: string }
+        curated: { type: boolean }
+        budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProposalItem' }
+        validation: { $ref: '#/components/schemas/Validation' }
+        limitations:
+          type: array
+          items: { type: string }
+    PlanItemInput:
+      type: object
+      required: [instrumentId, weightBps, state]
+      properties:
+        instrumentId: { type: string }
+        weightBps: { $ref: '#/components/schemas/Bps' }
+        state: { type: string, enum: [active, rejected] }
+    PlanDraftInput:
+      type: object
+      required: [proposalId, budgetUsdc, items]
+      properties:
+        proposalId: { type: string }
+        budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PlanItemInput' }
+    Plan:
+      type: object
+      required: [id, status, version, budgetUsdc, items, validation, trackedMints, interpretationSummary, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [draft, active] }
+        version: { type: integer }
+        budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProposalItem' }
+        validation: { $ref: '#/components/schemas/Validation' }
+        trackedMints:
+          type: array
+          items: { type: string }
+        interpretationSummary: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    InstrumentDetail:
+      type: object
+      required: [instrument, represents, issuer, economicRights, limitations, risks, costs, howToTrade, availability, evidence, eligibilityNotes]
+      properties:
+        instrument: { $ref: '#/components/schemas/InstrumentSummary' }
+        represents: { type: string }
+        issuer:
+          type: object
+          required: [name, nature]
+          properties:
+            name: { type: string }
+            nature: { type: string }
+        economicRights:
+          type: array
+          items: { type: string }
+        limitations:
+          type: array
+          items: { type: string }
+        risks:
+          type: array
+          items: { type: string }
+        costs:
+          type: array
+          items: { type: string }
+        howToTrade: { type: string }
+        availability: { $ref: '#/components/schemas/Availability' }
+        evidence:
+          type: array
+          items:
+            type: object
+            required: [label, url, reviewedAt]
+            properties:
+              label: { type: string }
+              url: { type: string, format: uri }
+              reviewedAt: { type: string, format: date }
+        eligibilityNotes:
+          type: array
+          items: { type: string }
+    Balances:
+      type: object
+      required: [wallet, network, fetchedAt, sol, tokens]
+      properties:
+        wallet: { type: string }
+        network: { type: string }
+        fetchedAt: { type: string, format: date-time }
+        sol:
+          type: object
+          required: [quantity, suggestedFeeReserve]
+          properties:
+            quantity: { $ref: '#/components/schemas/Decimal' }
+            suggestedFeeReserve: { $ref: '#/components/schemas/Decimal' }
+        tokens:
+          type: array
+          items:
+            type: object
+            required: [mint, instrumentId, symbol, quantity, decimals, inCatalog]
+            properties:
+              mint: { type: string }
+              instrumentId: { type: [string, 'null'] }
+              symbol: { type: [string, 'null'] }
+              quantity: { $ref: '#/components/schemas/Decimal' }
+              decimals: { type: integer }
+              inCatalog: { type: boolean }
+    BuyInput:
+      type: object
+      required: [planId, side, instrumentId, inputUsdc]
+      properties:
+        planId: { type: string }
+        side: { type: string, const: buy }
+        instrumentId: { type: string }
+        inputUsdc: { $ref: '#/components/schemas/Decimal' }
+    SellInput:
+      type: object
+      required: [planId, side, instrumentId]
+      description: Informe `quantity` **ou** `percentBps`.
+      properties:
+        planId: { type: string }
+        side: { type: string, const: sell }
+        instrumentId: { type: string }
+        quantity: { $ref: '#/components/schemas/Decimal' }
+        percentBps: { $ref: '#/components/schemas/Bps' }
+    OperationStatus:
+      type: string
+      enum: [preparing, ready_for_review, awaiting_signature, rejected, sending, pending, confirmed, failed, expired, reconciling]
+    Fee:
+      type: object
+      required: [label, amount, symbol]
+      properties:
+        label: { type: string }
+        amount: { $ref: '#/components/schemas/Decimal' }
+        symbol: { type: string }
+    OperationReview:
+      type: object
+      required: [inputAmount, inputSymbol, estimatedOutput, outputSymbol, minimumOutput, slippageBps, fees, destinationWallet, expiresAt, planEffect]
+      properties:
+        inputAmount: { $ref: '#/components/schemas/Decimal' }
+        inputSymbol: { type: string }
+        estimatedOutput: { $ref: '#/components/schemas/Decimal' }
+        outputSymbol: { type: string }
+        minimumOutput: { $ref: '#/components/schemas/Decimal' }
+        slippageBps: { $ref: '#/components/schemas/Bps' }
+        fees:
+          type: array
+          items: { $ref: '#/components/schemas/Fee' }
+        destinationWallet: { type: string }
+        expiresAt: { type: string, format: date-time }
+        planEffect:
+          type: object
+          required: [targetBps, currentBps, afterBps]
+          properties:
+            targetBps: { $ref: '#/components/schemas/Bps' }
+            currentBps: { type: [integer, 'null'] }
+            afterBps: { type: [integer, 'null'] }
+    OperationResult:
+      type: object
+      required: [signature, explorerUrl, inputAmount, outputAmount, failureReason]
+      properties:
+        signature: { type: [string, 'null'] }
+        explorerUrl: { type: [string, 'null'] }
+        inputAmount: { type: [string, 'null'], description: 'Efetivo, da transação confirmada.' }
+        outputAmount: { type: [string, 'null'], description: 'Efetivo, da transação confirmada.' }
+        failureReason: { type: [string, 'null'] }
+    Operation:
+      type: object
+      required: [id, planId, side, instrument, status, balanceUpdating, review, transaction, result, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        planId: { type: string }
+        side: { type: string, enum: [buy, sell] }
+        instrument: { $ref: '#/components/schemas/InstrumentSummary' }
+        status: { $ref: '#/components/schemas/OperationStatus' }
+        balanceUpdating: { type: boolean, description: '"Confirmada, atualizando saldo".' }
+        review:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/OperationReview'
+        transaction: { type: [string, 'null'], description: Base64; só em `ready_for_review`. É esta que o front manda assinar. }
+        result: { $ref: '#/components/schemas/OperationResult' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Price:
+      type: object
+      required: [usd, observedAt, valid]
+      properties:
+        usd: { type: [string, 'null'] }
+        observedAt: { type: [string, 'null'], format: date-time }
+        valid: { type: boolean }
+    PositionItem:
+      type: object
+      required: [instrument, state, quantity, price, valuationUsd, targetBps, currentBps, diffBps, pendingPlannedUsdc, cost, resultUsd, balanceUpdating]
+      properties:
+        instrument: { $ref: '#/components/schemas/InstrumentSummary' }
+        state: { type: string, enum: [active, rejected] }
+        quantity: { $ref: '#/components/schemas/Decimal' }
+        price: { $ref: '#/components/schemas/Price' }
+        valuationUsd: { type: [string, 'null'] }
+        targetBps: { $ref: '#/components/schemas/Bps' }
+        currentBps: { type: [integer, 'null'] }
+        diffBps:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/SignedBps'
+        pendingPlannedUsdc: { $ref: '#/components/schemas/Decimal' }
+        cost:
+          type: object
+          required: [known, averageUsd]
+          properties:
+            known: { type: boolean }
+            averageUsd: { type: [string, 'null'] }
+        resultUsd: { type: [string, 'null'] }
+        balanceUpdating: { type: boolean }
+    Limitation:
+      type: object
+      required: [code, instrumentId, message]
+      properties:
+        code: { type: string, enum: [PRICE_MISSING, COST_UNKNOWN, EXTERNAL_MOVEMENT_PENDING, TOTAL_ZERO, NOT_RECONCILED] }
+        instrumentId: { type: [string, 'null'] }
+        message: { type: string }
+    Position:
+      type: object
+      required: [planId, planVersion, updatedAt, composition, totals, items, limitations]
+      properties:
+        planId: { type: string }
+        planVersion: { type: integer }
+        updatedAt: { type: string, format: date-time }
+        composition:
+          type: object
+          required: [available, reason]
+          properties:
+            available: { type: boolean }
+            reason: { type: [string, 'null'] }
+        totals:
+          type: object
+          required: [knownValueUsd, complete, pendingPlannedUsdc]
+          properties:
+            knownValueUsd: { $ref: '#/components/schemas/Decimal' }
+            complete: { type: boolean }
+            pendingPlannedUsdc: { $ref: '#/components/schemas/Decimal' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PositionItem' }
+        limitations:
+          type: array
+          items: { $ref: '#/components/schemas/Limitation' }
+    ExternalMovement:
+      type: object
+      required: [kind, id, mint, symbol, direction, quantity, signature, explorerUrl, classification, observedAt]
+      properties:
+        kind: { type: string, const: external_movement }
+        id: { type: string }
+        mint: { type: string }
+        symbol: { type: [string, 'null'] }
+        direction: { type: string, enum: [in, out] }
+        quantity: { $ref: '#/components/schemas/Decimal' }
+        signature: { type: string }
+        explorerUrl: { type: string }
+        classification: { type: string, enum: [deposit, withdrawal, trade, pending] }
+        observedAt: { type: string, format: date-time }
+    OperationActivity:
+      type: object
+      required: [kind, operation]
+      properties:
+        kind: { type: string, const: operation }
+        operation: { $ref: '#/components/schemas/Operation' }
+    ActivityItem:
+      oneOf:
+        - $ref: '#/components/schemas/OperationActivity'
+        - $ref: '#/components/schemas/ExternalMovement'
+      discriminator:
+        propertyName: kind
+        mapping:
+          operation: '#/components/schemas/OperationActivity'
+          external_movement: '#/components/schemas/ExternalMovement'
