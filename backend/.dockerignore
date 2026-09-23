@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+npm-debug.log*
+.env
+.env.*
+!.env.example
+*keypair*.json
+id.json
+Dockerfile
+.dockerignore
+.git

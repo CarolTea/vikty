@@ -1,0 +1,74 @@
+# VicTy — .gitignore (stack-agnostic until front/back stacks are chosen)
+
+# ----- Secrets & environment -----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ----- Solana keypairs -----
+id.json
+*keypair*.json
+*-keypair.json
+wallet*.json
+.config/solana/
+
+# ----- Node / JS / TS -----
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.parcel-cache/
+.vercel/
+.netlify/
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ----- Python (in case the backend goes that way) -----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ----- Local data & Docker -----
+*.sqlite
+*.sqlite3
+*.db
+.data/
+docker-compose.override.yml
+
+# ----- Logs & temp -----
+logs/
+*.log
+tmp/
+.tmp/
+
+# ----- Editors & OS -----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
