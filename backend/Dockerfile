@@ -1,5 +1,5 @@
-# VicTy backend — DRAFT Dockerfile
-# Assumes Node.js + TypeScript (stack not chosen yet — adjust once decided).
+# VicTy backend — Dockerfile
+# Stack: Node.js 22 + TypeScript + Fastify.
 # Contract the backend app must honor for this file to work:
 #   - `npm run build` emits JS into ./dist
 #   - `node dist/index.js` starts the HTTP server on $PORT
