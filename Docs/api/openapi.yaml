@@ -41,27 +41,29 @@ info:
     | 01 | `GET /session` | Estado da sessão: quota, wallet autenticada, plano ativo, limites | — | todas (ao abrir o app) |
     | 02 | `GET /theses/suggested` | Teses sugeridas (curadas) | — | 1 |
     | 03 | `POST /interpretations` | Interpretar uma convicção (texto livre ou tese sugerida) | — | 1 |
-    | 04 | `PATCH /interpretations/{id}` | Corrigir a interpretação e responder ambiguidades | — | 2 |
-    | 05 | `POST /proposals` | Gerar a composição a partir da interpretação confirmada | — | 2 |
-    | 06 | `POST /proposals/validate` | Validar pesos, rejeições e orçamento editados | — | 3 |
-    | 07 | `GET /instruments/{id}` | Detalhe de um instrumento aprovado | — | 3, 4 |
-    | 08 | `GET /wallet/balances` | Saldos da wallet autenticada | W | 7, 8 |
-    | 09 | `POST /plans` | Salvar o rascunho como plano da wallet | W | 5/6 → 7 |
-    | 10 | `GET /plans/current` | Plano da wallet | W | 7, 11 |
-    | 11 | `PUT /plans/{id}` | Alterar pesos, rejeições e orçamento (gera nova versão) | W | 11 |
-    | 12 | `POST /plans/{id}/activate` | Confirmar o escopo dos saldos acompanhados e ativar o plano | W | 7 |
-    | 13 | `POST /operations` | Preparar uma compra ou venda (cotação e transação pra revisão) | W | 8, 10 |
-    | 14 | `POST /operations/{id}/refresh-quote` | Nova cotação (expirada ou a pedido) | W | 8, 10 |
-    | 15 | `POST /operations/{id}/events` | Registrar "assinatura solicitada" ou "assinatura recusada" | W | 8, 10 |
-    | 16 | `POST /operations/{id}/submit` | Enviar a transação assinada | W | 8, 10 → 9 |
-    | 17 | `GET /operations/{id}` | Estado de uma operação | W | 9 |
-    | 18 | `GET /operations?active=true` | Operações em andamento (recuperar após recarregar) | W | 9 (ao abrir o app) |
-    | 19 | `GET /plans/current/position` | Posição: planejado vs atual, avaliação, limitações | W | 11 |
-    | 20 | `POST /plans/current/reconcile` | Pedir reconciliação com a blockchain | W | 11 |
-    | 21 | `GET /activity` | Histórico de operações e movimentos externos | W | 12 |
-    | 22 | `POST /events` | Eventos de analytics do front, sem texto livre | — | todas |
+    | 04 | `GET /interpretations/{id}` | Ler uma interpretação (recuperar a tela após recarregar) | — | 2 |
+    | 05 | `PATCH /interpretations/{id}` | Corrigir a interpretação e responder ambiguidades | — | 2 |
+    | 06 | `POST /proposals` | Gerar a composição a partir da interpretação confirmada | — | 2 |
+    | 07 | `GET /proposals/{id}` | Ler uma proposta (recuperar a tela após recarregar) | — | 3 |
+    | 08 | `POST /proposals/{id}/validations` | Validar pesos, rejeições e orçamento editados | — | 3 |
+    | 09 | `GET /instruments/{id}` | Detalhe de um instrumento aprovado | — | 3, 4 |
+    | 10 | `GET /wallet/balances` | Saldos da wallet autenticada | W | 7, 8 |
+    | 11 | `POST /plans` | Salvar o rascunho como plano da wallet | W | 5/6 → 7 |
+    | 12 | `GET /plans/current` | Plano da wallet | W | 7, 11 |
+    | 13 | `PUT /plans/{id}` | Alterar pesos, rejeições e orçamento (gera nova versão) | W | 11 |
+    | 14 | `PATCH /plans/{id}` | Ativar o plano e definir o escopo dos saldos acompanhados | W | 7 |
+    | 15 | `POST /operations` | Preparar uma compra ou venda (cotação e transação pra revisão) | W | 8, 10 |
+    | 16 | `POST /operations/{id}/quotes` | Nova cotação (expirada ou a pedido) | W | 8, 10 |
+    | 17 | `POST /operations/{id}/events` | Registrar "assinatura solicitada" ou "assinatura recusada" | W | 8, 10 |
+    | 18 | `POST /operations/{id}/submissions` | Enviar a transação assinada | W | 8, 10 → 9 |
+    | 19 | `GET /operations/{id}` | Estado de uma operação | W | 9 |
+    | 20 | `GET /operations?active=true` | Operações em andamento (recuperar após recarregar) | W | 9 (ao abrir o app) |
+    | 21 | `GET /plans/current/position` | Posição: planejado vs atual, avaliação, limitações | W | 11 |
+    | 22 | `POST /plans/current/reconciliations` | Pedir reconciliação com a blockchain | W | 11 |
+    | 23 | `GET /activity` | Histórico de operações e movimentos externos | W | 12 |
+    | 24 | `POST /events` | Eventos de analytics do front, sem texto livre | — | todas |
 
-    **Primeiro ciclo de compra real:** bastam as rotas 01, 07, 08 e 13–18, com um plano de teste montado
+    **Primeiro ciclo de compra real:** bastam as rotas 01, 09, 10 e 15–20, com um plano de teste montado
     no banco. O front da compra pode andar antes da IA existir.
 
     ## Convenções
@@ -74,7 +76,10 @@ info:
     - **Autorização:** toda leitura e escrita é filtrada pela wallet do token; recurso de outra wallet
       responde `404`, como se não existisse.
     - **Cookies e CORS:** o front chama com `credentials: 'include'`; o backend aceita só as origens do app.
-    - **Idempotência:** `POST /operations` e `POST /operations/{id}/submit` exigem `Idempotency-Key`
+    - **REST:** rotas são recursos, sem verbo no caminho. Criar responde `201 Created` com o header
+      `Location` do recurso novo; trabalho assíncrono (envio, reconciliação) responde `202 Accepted` com
+      `Location` de onde acompanhar. Ativar um plano é mudar o estado dele (`PATCH`).
+    - **Idempotência:** `POST /operations` e `POST /operations/{id}/submissions` exigem `Idempotency-Key`
       (UUID gerado pelo front por intenção). Mesma chave e mesmo corpo → mesmo resultado; corpo diferente →
       `409 IDEMPOTENCY_CONFLICT`. Clique duplo nunca cria duas compras.
     - **Erros:** sempre o envelope `Error`; `message` vem em **inglês**, pronta pra tela, e o front
@@ -139,13 +144,14 @@ tags:
       4. `POST /events` → início de descoberta.
   - name: Interface 2 — Interpretação
     description: |
-      "Here's what we understood." Recebe o resultado de `POST /interpretations`.
+      "Here's what we understood." Recebe o resultado de `POST /interpretations`
+      (ao recarregar: `GET /interpretations/{id}`).
       1. `PATCH /interpretations/{id}` → cada correção e cada resposta de ambiguidade.
       2. `POST /proposals` → "See composition" (só com a interpretação pronta) → Interface 3.
   - name: Interface 3 — Composição
     description: |
-      Recebe o resultado de `POST /proposals`.
-      - `POST /proposals/validate` → a cada edição de peso, rejeição ou orçamento (com debounce).
+      Recebe o resultado de `POST /proposals` (ao recarregar: `GET /proposals/{id}`).
+      - `POST /proposals/{id}/validations` → a cada edição de peso, rejeição ou orçamento (com debounce).
       - `GET /instruments/{id}` → "Instrument details" (Interface 4).
       - "Invest" num ativo sem wallet → Interfaces 5 e 6 (Privy) → Interface 7.
       - "Invest" com plano ativo → Interface 8.
@@ -160,27 +166,27 @@ tags:
     description: |
       1. `GET /wallet/balances` → saldos, saldos preexistentes, reserva de SOL.
       2. `GET /plans/current` → o rascunho salvo.
-      3. `POST /plans/{id}/activate` → confirmar os mints acompanhados e ativar.
+      3. `PATCH /plans/{id}` com `status: "active"` → confirmar os mints acompanhados e ativar.
   - name: Interface 8 — Revisão da compra
     description: |
       1. `GET /wallet/balances` → saldo disponível (insuficiência aparece na revisão).
       2. `POST /operations` (`side: "buy"`) → cotação, revisão e transação.
-      3. `POST /operations/{id}/refresh-quote` → cotação expirada ou "atualizar".
+      3. `POST /operations/{id}/quotes` → cotação expirada ou "atualizar".
       4. `POST /operations/{id}/events` → `signature_requested` ao abrir a wallet; `signature_rejected` se o usuário recusar.
-      5. Assinatura na wallet externa (SDK do Privy) → `POST /operations/{id}/submit` → Interface 9.
+      5. Assinatura na wallet externa (SDK do Privy) → `POST /operations/{id}/submissions` → Interface 9.
   - name: Interface 9 — Operação em andamento
     description: |
       - `GET /operations/{id}` → polling até o estado final.
       - `GET /operations?active=true` → recuperação após recarregar.
   - name: Interface 10 — Venda
     description: |
-      `POST /operations` (`side: "sell"`, quantidade ou percentual) → `refresh-quote` → `events` →
-      assinatura → `submit` → Interface 9.
+      `POST /operations` (`side: "sell"`, quantidade ou percentual) → `quotes` → `events` →
+      assinatura → `submissions` → Interface 9.
   - name: Interface 11 — Acompanhamento
     description: |
       - `GET /plans/current` → o plano.
       - `GET /plans/current/position` → posição, planejado vs atual, limitações.
-      - `POST /plans/current/reconcile` → "Refresh data"; depois `position` de novo.
+      - `POST /plans/current/reconciliations` → "Refresh data"; depois `position` de novo.
       - `PUT /plans/{id}` → editar pesos, rejeições ou orçamento do plano ativo.
       - "Buy" num item pendente → Interface 8 · "Sell" → Interface 10.
   - name: Interface 12 — Atividade
@@ -311,8 +317,12 @@ paths:
               teseSugerida:
                 value: { source: suggested, suggestedThesisId: th_ai_infra }
       responses:
-        '200':
-          description: Interpretação
+        '201':
+          description: Interpretação criada
+          headers:
+            Location:
+              description: '`/api/v1/interpretations/{id}`'
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Interpretation' }
@@ -345,9 +355,26 @@ paths:
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /interpretations/{id}:
+    get:
+      operationId: getInterpretation
+      summary: 04 · Ler uma interpretação
+      description: Usada ao recarregar a tela de Interpretação. Só a sessão (ou wallet) que criou pode ler.
+      tags: [Interface 2 — Interpretação]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Interpretação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Interpretation' }
+        '404': { $ref: '#/components/responses/NotFound' }
     patch:
       operationId: updateInterpretation
-      summary: 04 · Corrigir a interpretação
+      summary: 05 · Corrigir a interpretação
       description: |
         Correções e respostas **estruturadas**: não chamam a IA e não consomem quota. `status` vira
         `ready` quando não há ambiguidade material aberta.
@@ -379,7 +406,7 @@ paths:
   /proposals:
     post:
       operationId: createProposal
-      summary: 05 · Gerar a composição
+      summary: 06 · Gerar a composição
       description: Exige interpretação com `status` = `ready`. Não consome quota adicional.
       tags: [Interface 2 — Interpretação]
       security:
@@ -397,8 +424,12 @@ paths:
                 budgetUsdc: { $ref: '#/components/schemas/Decimal' }
             example: { interpretationId: int_9a2, budgetUsdc: '500.00' }
       responses:
-        '200':
-          description: Proposta
+        '201':
+          description: Proposta criada
+          headers:
+            Location:
+              description: '`/api/v1/proposals/{id}`'
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Proposal' }
@@ -408,25 +439,45 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
-  /proposals/validate:
-    post:
-      operationId: validateProposal
-      summary: 06 · Validar o rascunho editado
-      description: |
-        Validação determinística. Funciona sem wallet. **Não redistribui pesos**: só diz o que está
-        válido ou não; quem ajusta é o usuário. Instrumento fora da proposta de origem → issue
-        `INCOMPATIBLE_SUBSTITUTION`.
+  /proposals/{id}:
+    get:
+      operationId: getProposal
+      summary: 07 · Ler uma proposta
+      description: Usada ao recarregar a tela de Composição. Só a sessão (ou wallet) que criou pode ler.
       tags: [Interface 3 — Composição]
       security:
         - anonymousSession: []
         - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Proposta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Proposal' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /proposals/{id}/validations:
+    post:
+      operationId: createProposalValidation
+      summary: 08 · Validar o rascunho editado
+      description: |
+        Validação determinística. Funciona sem wallet. **Não redistribui pesos**: só diz o que está
+        válido ou não; quem ajusta é o usuário. Instrumento fora da proposta de origem → issue
+        `INCOMPATIBLE_SUBSTITUTION`. O resultado não é guardado, por isso responde `200` (não `201`).
+      tags: [Interface 3 — Composição]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/PlanDraftInput' }
+            schema: { $ref: '#/components/schemas/ProposalEditInput' }
             example:
-              proposalId: prop_41c
               budgetUsdc: '500.00'
               items:
                 - { instrumentId: ins_semix, weightBps: 3500, state: active }
@@ -452,7 +503,7 @@ paths:
   /instruments/{id}:
     get:
       operationId: getInstrument
-      summary: 07 · Detalhe de um instrumento
+      summary: 09 · Detalhe de um instrumento
       tags: [Interface 3 — Composição, Interface 4 — Detalhe do instrumento]
       security:
         - anonymousSession: []
@@ -470,7 +521,7 @@ paths:
   /wallet/balances:
     get:
       operationId: getWalletBalances
-      summary: 08 · Saldos da wallet
+      summary: 10 · Saldos da wallet
       description: Tokens fora do catálogo aparecem com `inCatalog` = `false` e nunca entram na composição.
       tags: [Interface 7 — Ativar plano, Interface 8 — Revisão da compra]
       security:
@@ -487,7 +538,7 @@ paths:
   /plans:
     post:
       operationId: createPlan
-      summary: 09 · Salvar o rascunho como plano
+      summary: 11 · Salvar o rascunho como plano
       tags: [Interfaces 5 e 6 — Conectar wallet e entrar]
       security:
         - privyToken: []
@@ -499,6 +550,10 @@ paths:
       responses:
         '201':
           description: Plano criado como rascunho
+          headers:
+            Location:
+              description: '`/api/v1/plans/{id}`'
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Plan' }
@@ -510,7 +565,7 @@ paths:
   /plans/current:
     get:
       operationId: getCurrentPlan
-      summary: 10 · Plano da wallet
+      summary: 12 · Plano da wallet
       description: O plano ativo, ou o rascunho mais recente. `404` se a wallet não tem plano.
       tags: [Interface 7 — Ativar plano, Interface 11 — Acompanhamento]
       security:
@@ -527,7 +582,7 @@ paths:
   /plans/{id}:
     put:
       operationId: updatePlan
-      summary: 11 · Alterar o plano (nova versão)
+      summary: 13 · Alterar o plano (nova versão)
       description: Gera `version` + 1. Operações já feitas não são reescritas.
       tags: [Interface 11 — Acompanhamento]
       security:
@@ -556,13 +611,12 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Unprocessable' }
-
-  /plans/{id}/activate:
-    post:
+    patch:
       operationId: activatePlan
-      summary: 12 · Ativar o plano e o escopo dos saldos
+      summary: 14 · Ativar o plano e o escopo dos saldos
       description: |
-        Saldos preexistentes entram sem custo inventado. Mudar o escopo depois é uma nova chamada, registrada.
+        Ativar é mudar o estado do plano pra `active`, com os mints acompanhados. Saldos preexistentes
+        entram sem custo inventado. Mudar o escopo depois é um novo `PATCH`, registrado.
       tags: [Interface 7 — Ativar plano]
       security:
         - privyToken: []
@@ -572,14 +626,8 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [trackedMints, confirmPreexistingBalances]
-              properties:
-                trackedMints:
-                  type: array
-                  items: { type: string }
-                confirmPreexistingBalances: { type: boolean }
+            schema: { $ref: '#/components/schemas/PlanActivation' }
+            example: { status: active, trackedMints: [EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v], confirmPreexistingBalances: true }
       responses:
         '200':
           description: Plano ativo
@@ -593,7 +641,7 @@ paths:
   /operations:
     post:
       operationId: prepareOperation
-      summary: 13 · Preparar compra ou venda
+      summary: 15 · Preparar compra ou venda
       description: |
         Cota, valida e devolve a transação pra revisão. **Não** pede assinatura. Antes de devolver, o
         backend verifica a transação: mints aprovados, destinatário = wallet do token, programas
@@ -624,8 +672,14 @@ paths:
               vendaPorPercentual:
                 value: { planId: plan_7d1, side: sell, instrumentId: ins_semix, percentBps: 5000 }
       responses:
-        '200':
-          description: Operação pronta pra revisão (`ready_for_review`), com `review` e `transaction`
+        '201':
+          description: |
+            Operação criada, pronta pra revisão (`ready_for_review`), com `review` e `transaction`. Repetir
+            a mesma `Idempotency-Key` devolve a mesma resposta.
+          headers:
+            Location:
+              description: '`/api/v1/operations/{id}`'
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
@@ -636,7 +690,7 @@ paths:
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
     get:
       operationId: listActiveOperations
-      summary: 18 · Operações em andamento
+      summary: 20 · Operações em andamento
       description: |
         Com `active=true`, devolve as operações com status fora de `confirmed`, `failed`, `rejected` e
         `expired`. Usada ao abrir o app, pra recuperar operação após recarregar.
@@ -662,12 +716,13 @@ paths:
                     items: { $ref: '#/components/schemas/Operation' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  /operations/{id}/refresh-quote:
+  /operations/{id}/quotes:
     post:
-      operationId: refreshQuote
-      summary: 14 · Nova cotação
+      operationId: createQuote
+      summary: 16 · Nova cotação
       description: |
-        Nova `review` e nova `transaction`. Mudança relevante em relação à revisão anterior →
+        Cria uma nova cotação pra operação e devolve a operação com a nova `review` e a nova
+        `transaction` embutidas. Mudança relevante em relação à revisão anterior →
         `409 MATERIAL_CHANGE` com `details.operation` (o usuário revisa de novo).
       tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
       security:
@@ -688,7 +743,7 @@ paths:
   /operations/{id}/events:
     post:
       operationId: recordSignatureEvent
-      summary: 15 · Assinatura solicitada ou recusada
+      summary: 17 · Assinatura solicitada ou recusada
       description: Recusa não registra compra.
       tags: [Interface 8 — Revisão da compra, Interface 10 — Venda]
       security:
@@ -712,10 +767,10 @@ paths:
               schema: { $ref: '#/components/schemas/Operation' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /operations/{id}/submit:
+  /operations/{id}/submissions:
     post:
-      operationId: submitOperation
-      summary: 16 · Enviar a transação assinada
+      operationId: createSubmission
+      summary: 18 · Enviar a transação assinada
       description: |
         O backend registra a assinatura **antes** de esperar a resposta da Jupiter *(Jupiter `/execute`)*.
         Timeout **não** é falha: a operação fica `pending` ou `reconciling` e o front acompanha por
@@ -737,7 +792,11 @@ paths:
                 signedTransaction: { type: string, description: Transação assinada em base64 }
       responses:
         '202':
-          description: Operação em `sending` ou `pending`
+          description: Transação recebida; operação em `sending` ou `pending`
+          headers:
+            Location:
+              description: '`/api/v1/operations/{id}` — onde acompanhar o estado'
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
@@ -749,7 +808,7 @@ paths:
   /operations/{id}:
     get:
       operationId: getOperation
-      summary: 17 · Estado de uma operação
+      summary: 19 · Estado de uma operação
       description: |
         O front consulta a cada 2 s enquanto o status for `sending`, `pending` ou `reconciling`, até 2 min;
         depois, a cada 10 s. `confirmed` só com confirmação on-chain.
@@ -769,7 +828,7 @@ paths:
   /plans/current/position:
     get:
       operationId: getPosition
-      summary: 19 · Posição do plano
+      summary: 21 · Posição do plano
       description: |
         - Preço ausente → `price.valid` = `false` e `valuationUsd` = `null`; se o saldo for relevante,
           `composition.available` = `false` com `reason`.
@@ -787,10 +846,10 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /plans/current/reconcile:
+  /plans/current/reconciliations:
     post:
-      operationId: reconcilePlan
-      summary: 20 · Pedir reconciliação
+      operationId: createReconciliation
+      summary: 22 · Pedir reconciliação
       description: O front busca a posição de novo em seguida.
       tags: [Interface 11 — Acompanhamento]
       security:
@@ -798,6 +857,10 @@ paths:
       responses:
         '202':
           description: Reconciliação iniciada
+          headers:
+            Location:
+              description: '`/api/v1/plans/current/position` — onde ler o resultado'
+              schema: { type: string }
           content:
             application/json:
               schema:
@@ -811,7 +874,7 @@ paths:
   /activity:
     get:
       operationId: listActivity
-      summary: 21 · Histórico de atividade
+      summary: 23 · Histórico de atividade
       tags: [Interface 12 — Atividade]
       security:
         - privyToken: []
@@ -840,7 +903,7 @@ paths:
   /events:
     post:
       operationId: trackEvents
-      summary: 22 · Eventos de analytics
+      summary: 24 · Eventos de analytics
       description: |
         `name` numa lista fechada; `props` sem texto livre de convicção e sem endereço de wallet. Eventos
         que o backend já conhece (proposta gerada, operação confirmada) são emitidos por ele mesmo.
@@ -1237,6 +1300,23 @@ components:
         instrumentId: { type: string }
         weightBps: { $ref: '#/components/schemas/Bps' }
         state: { type: string, enum: [active, rejected] }
+    ProposalEditInput:
+      type: object
+      required: [budgetUsdc, items]
+      properties:
+        budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/PlanItemInput' }
+    PlanActivation:
+      type: object
+      required: [status, trackedMints, confirmPreexistingBalances]
+      properties:
+        status: { type: string, const: active }
+        trackedMints:
+          type: array
+          items: { type: string }
+        confirmPreexistingBalances: { type: boolean }
     PlanDraftInput:
       type: object
       required: [proposalId, budgetUsdc, items]
