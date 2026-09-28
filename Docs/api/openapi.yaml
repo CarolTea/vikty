@@ -95,7 +95,7 @@ info:
     |---|---|---|
     | 400 | `VALIDATION_ERROR` | Corpo fora do schema; `details.fields` diz quais campos |
     | 400 | `TEXT_TOO_LONG` | Convicção acima do limite; `details.max` |
-    | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido |
+    | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido; em `GET /session`, token enviado mas inválido ou expirado |
     | 403 | `ANON_QUOTA_USED` | Interpretação gratuita já usada → front oferece conectar a wallet |
     | 403 | `WALLET_QUOTA_USED` | Quota da wallet esgotada; `details.resetsAt` |
     | 403 | `BOT_CHECK_FAILED` | Turnstile ausente ou inválido; `details.interactive: true` pede o desafio visível |
@@ -113,7 +113,7 @@ info:
     | 422 | `TRANSACTION_REJECTED` | A transação falhou na verificação do backend; não se pede assinatura |
     | 429 | `RATE_LIMITED` | Muitas requisições; `retryAfter` em segundos (também no header `Retry-After`) |
     | 503 | `AI_UNAVAILABLE` | IA fora; o front oferece tentar de novo ou usar uma tese sugerida |
-    | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter ou RPC fora ou em timeout |
+    | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter, RPC ou Privy fora ou em timeout |
 
     ## Em aberto
 
@@ -219,6 +219,10 @@ paths:
       description: |
         Chamado ao abrir o app e depois de conectar ou desconectar a wallet. Cria a sessão anônima se
         não existir. Com token do Privy, inclui os dados da wallet.
+
+        Sem header `Authorization`, responde como sessão anônima. Com header, o token precisa ser válido:
+        token inválido, expirado ou mal formado dá `401` (não cai pra sessão anônima); o front faz o
+        logout do Privy e chama `GET /session` de novo sem token.
       tags: [Ao abrir o app, Interface 1 — Descoberta, Interfaces 5 e 6 — Conectar wallet e entrar]
       security:
         - anonymousSession: []
@@ -249,7 +253,9 @@ paths:
                     activePlanId: plan_7d1
                     activeOperationIds: []
                     limits: { convictionMaxChars: 600 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /theses/suggested:
     get:
