@@ -1,0 +1,44 @@
+# Checa o backend: tipos, testes unitários e build.
+# Roda quando algo em backend/ muda (push na main ou PR); também dá pra disparar à mão em Actions.
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Checar tipos
+        run: npm run typecheck
+      # Os testes usam fakes (sem Redis, Postgres nem Privy), então não precisam de serviços.
+      - name: Testes unitários
+        run: npm test
+      - name: Build
+        run: npm run build
