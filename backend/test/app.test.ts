@@ -1,23 +1,14 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
-
-const config = loadConfig({
-  NODE_ENV: 'test',
-  LOG_LEVEL: 'silent',
-  WEB_ORIGIN: 'http://localhost:3000',
-  SOLANA_RPC_URL: 'https://api.mainnet-beta.solana.com',
-  DATABASE_URL: 'postgres://vikty:vikty@localhost:5432/vikty',
-  REDIS_URL: 'redis://localhost:6379',
-});
+import { testApp } from './helpers.js';
 
 describe('app', () => {
   let app: FastifyInstance;
 
   before(async () => {
-    app = await buildApp(config);
+    app = await testApp();
   });
 
   after(async () => {

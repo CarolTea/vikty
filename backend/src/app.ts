@@ -1,11 +1,15 @@
+import { randomBytes } from 'node:crypto';
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
-import type { Config } from './config.js';
+import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
 import { healthRoutes } from './routes/health.js';
+import { sessionRoutes } from './routes/session.js';
 import { validatorCompiler } from './validation.js';
 
-export async function buildApp(config: Config): Promise<FastifyInstance> {
+export async function buildApp(deps: Deps): Promise<FastifyInstance> {
+  const { config } = deps;
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -16,11 +20,22 @@ export async function buildApp(config: Config): Promise<FastifyInstance> {
   });
 
   app.setValidatorCompiler(validatorCompiler);
+  app.decorate('deps', deps);
+  // Without a listener ioredis prints every reconnect failure as an unhandled error.
+  deps.redis?.on('error', (err: Error) => app.log.warn({ err }, 'redis unavailable'));
+  app.addHook('onClose', async () => {
+    await deps.close?.();
+  });
 
   await app.register(cors, {
     origin: config.WEB_ORIGIN,
     credentials: true,
   });
+
+  // Production requires SESSION_SECRET (see config.ts). Locally an empty one gets a random
+  // secret per process, so anonymous sessions just reset on restart.
+  const cookieSecret = config.SESSION_SECRET || randomBytes(32).toString('base64url');
+  await app.register(cookie, { secret: cookieSecret });
 
   app.setErrorHandler((err: FastifyError | ApiError, request, reply) => {
     if (err instanceof ApiError) {
@@ -60,8 +75,8 @@ export async function buildApp(config: Config): Promise<FastifyInstance> {
 
   // Contract routes (Docs/api/openapi.yaml) go under this prefix.
   await app.register(
-    async (_api) => {
-      // e.g. await api.register(sessionRoutes);
+    async (api) => {
+      await api.register(sessionRoutes);
     },
     { prefix: '/api/v1' },
   );

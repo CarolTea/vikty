@@ -1,17 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { buildApp } from '../src/app.js';
-import { loadConfig } from '../src/config.js';
-
-const config = loadConfig({
-  NODE_ENV: 'test',
-  LOG_LEVEL: 'silent',
-  WEB_ORIGIN: 'http://localhost:3000',
-  SOLANA_RPC_URL: 'https://api.mainnet-beta.solana.com',
-  DATABASE_URL: 'postgres://vikty:vikty@localhost:5432/vikty',
-  REDIS_URL: 'redis://localhost:6379',
-});
+import { testApp } from './helpers.js';
 
 const json = { 'content-type': 'application/json' };
 
@@ -19,7 +9,7 @@ describe('error envelope', () => {
   let app: FastifyInstance;
 
   before(async () => {
-    app = await buildApp(config);
+    app = await testApp();
     app.post(
       '/echo',
       { schema: { body: { type: 'object', required: ['text'], properties: { text: { type: 'string' } } } } },
@@ -83,7 +73,7 @@ describe('coercion', () => {
   let app: FastifyInstance;
 
   before(async () => {
-    app = await buildApp(config);
+    app = await testApp();
     app.get(
       '/items',
       { schema: { querystring: { type: 'object', properties: { limit: { type: 'integer' } } } } },

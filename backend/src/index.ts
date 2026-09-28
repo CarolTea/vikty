@@ -1,8 +1,9 @@
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
+import { createDeps } from './deps.js';
 
 const config = loadConfig();
-const app = await buildApp(config);
+const app = await buildApp(createDeps(config));
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, async () => {

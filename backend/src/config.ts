@@ -22,8 +22,13 @@ const schema = z
 
     PRIVY_APP_ID: secret,
     PRIVY_APP_SECRET: secret,
-    SESSION_SECRET: secret,
+    PRIVY_VERIFICATION_KEY: secret,
+    SESSION_SECRET: z.union([z.literal(''), z.string().min(32)]).default(''),
     TURNSTILE_SECRET_KEY: secret,
+
+    // Product limits; the API contract treats these as configuration, not constants.
+    CONVICTION_MAX_CHARS: z.coerce.number().int().positive().default(600),
+    WALLET_DAILY_INTERPRETATIONS: z.coerce.number().int().nonnegative().default(20),
   })
   .superRefine((env, ctx) => {
     // Empty secrets are fine locally; production must have every one of them.
