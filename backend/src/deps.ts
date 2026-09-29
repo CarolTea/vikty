@@ -1,7 +1,11 @@
 import { PrivyClient } from '@privy-io/node';
 import { Redis } from 'ioredis';
+import { noInterpreterYet, type ConvictionInterpreter } from './ai/interpreter.js';
 import { PrivyWalletResolver, type WalletResolver } from './auth/privy.js';
+import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile.js';
 import type { Config } from './config.js';
+import { pgDb, type Db } from './db/index.js';
+import { PgInterpretationStore, type InterpretationStore } from './interpretations.js';
 import { noPlansYet, type PlanLookup } from './plans.js';
 import { RedisQuotaStore, type QuotaStore } from './quota.js';
 
@@ -11,6 +15,9 @@ export interface Deps {
   quota: QuotaStore;
   wallets: WalletResolver;
   plans: PlanLookup;
+  botCheck: BotCheck;
+  interpreter: ConvictionInterpreter;
+  interpretations: InterpretationStore;
   redis?: Redis;
   close?: () => Promise<void>;
 }
@@ -21,7 +28,7 @@ declare module 'fastify' {
   }
 }
 
-export function createDeps(config: Config): Deps {
+export function createDeps(config: Config): Deps & { db: Db } {
   const redis = new Redis(config.REDIS_URL, {
     maxRetriesPerRequest: 1,
     enableOfflineQueue: false,
@@ -36,14 +43,21 @@ export function createDeps(config: Config): Deps {
     ...(config.PRIVY_VERIFICATION_KEY && { jwtVerificationKey: config.PRIVY_VERIFICATION_KEY }),
   });
 
+  const db = pgDb(config.DATABASE_URL);
+
   return {
     config,
     quota: new RedisQuotaStore(redis),
     wallets: new PrivyWalletResolver(privy, redis),
     plans: noPlansYet,
+    botCheck: config.TURNSTILE_SECRET_KEY ? new TurnstileBotCheck(config.TURNSTILE_SECRET_KEY) : skipBotCheck,
+    // No AI provider chosen yet: free-text interpretations answer 503 AI_UNAVAILABLE.
+    interpreter: noInterpreterYet,
+    interpretations: new PgInterpretationStore(db),
+    db,
     redis,
     close: async () => {
-      await redis.quit();
+      await Promise.all([redis.quit(), db.close()]);
     },
   };
 }
