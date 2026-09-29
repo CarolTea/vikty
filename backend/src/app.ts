@@ -5,6 +5,7 @@ import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
 import { healthRoutes } from './routes/health.js';
+import { interpretationRoutes } from './routes/interpretations.js';
 import { sessionRoutes } from './routes/session.js';
 import { validatorCompiler } from './validation.js';
 
@@ -46,10 +47,12 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
     if ('validation' in err && err.validation) {
       const fields = err.validation.map((v) => {
         const path = v.instancePath.replace(/^\//, '').replaceAll('/', '.');
-        const missing = v.params['missingProperty'];
+        // A missing or unknown discriminator (e.g. `source`) points at the tag itself.
+        const missing = v.keyword === 'discriminator' ? v.params['tag'] : v.params['missingProperty'];
         return [path, typeof missing === 'string' ? missing : ''].filter(Boolean).join('.') || 'body';
       });
-      const body = new ApiError(400, 'VALIDATION_ERROR', 'Some fields are invalid.', { fields }).toBody();
+      // One field can fail several keywords (e.g. `required` and `discriminator`): list it once.
+      const body = new ApiError(400, 'VALIDATION_ERROR', 'Some fields are invalid.', { fields: [...new Set(fields)] }).toBody();
       return reply.status(400).send(body);
     }
 
@@ -77,6 +80,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(
     async (api) => {
       await api.register(sessionRoutes);
+      await api.register(interpretationRoutes);
     },
     { prefix: '/api/v1' },
   );

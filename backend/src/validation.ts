@@ -2,7 +2,8 @@ import { Ajv, type Options } from 'ajv';
 import addFormats from 'ajv-formats';
 import type { FastifySchemaCompiler } from 'fastify';
 
-const base: Options = { allErrors: true, removeAdditional: true, useDefaults: true };
+// `discriminator` lets a `oneOf` pick its branch by a tag field (e.g. `source`), as the contract does.
+const base: Options = { allErrors: true, removeAdditional: true, useDefaults: true, discriminator: true };
 
 // Bodies are JSON and must match the contract exactly: a number never becomes a string
 // (money travels as decimal strings, never floats).
