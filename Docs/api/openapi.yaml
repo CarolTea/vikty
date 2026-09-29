@@ -95,7 +95,7 @@ info:
     |---|---|---|
     | 400 | `VALIDATION_ERROR` | Corpo fora do schema; `details.fields` diz quais campos |
     | 400 | `TEXT_TOO_LONG` | Convicção acima do limite; `details.max` |
-    | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido; em `GET /session`, token enviado mas inválido ou expirado |
+    | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido; em `GET /session` e `POST /interpretations`, token enviado mas inválido ou expirado |
     | 403 | `ANON_QUOTA_USED` | Interpretação gratuita já usada → front oferece conectar a wallet |
     | 403 | `WALLET_QUOTA_USED` | Quota da wallet esgotada; `details.resetsAt` |
     | 403 | `BOT_CHECK_FAILED` | Turnstile ausente ou inválido; `details.interactive: true` pede o desafio visível |
@@ -113,7 +113,7 @@ info:
     | 422 | `TRANSACTION_REJECTED` | A transação falhou na verificação do backend; não se pede assinatura |
     | 429 | `RATE_LIMITED` | Muitas requisições; `retryAfter` em segundos (também no header `Retry-After`) |
     | 503 | `AI_UNAVAILABLE` | IA fora; o front oferece tentar de novo ou usar uma tese sugerida |
-    | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter, RPC ou Privy fora ou em timeout |
+    | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter, RPC, Privy ou Turnstile fora ou em timeout |
 
     ## Em aberto
 
@@ -293,9 +293,11 @@ paths:
         - `suggested` sem edição → interpretação curada, **sem IA e sem quota**.
         - `free_text` sem wallet → consome a interpretação gratuita (exige `botCheckToken`).
           Com wallet → consome a quota da wallet.
-        - `representation: "insufficient"` **não é erro**: é `200` com `limitations` explicando.
+        - `representation: "insufficient"` **não é erro**: é `201` com `limitations` explicando.
           Ausência de representação é uma resposta válida.
-        - O texto original não é devolvido nem vai pra analytics.
+        - O texto original não é devolvido, não é guardado e não vai pra analytics.
+        - Se a IA falhar (`503`), a quota gasta é devolvida: a pessoa pode tentar de novo.
+        - Token do Privy enviado mas inválido ou expirado → `401` (não cai pra sessão anônima).
       tags: [Interface 1 — Descoberta]
       security:
         - anonymousSession: []
@@ -356,6 +358,7 @@ paths:
                 status: needs_clarification
                 quota: { anonymousFreeUsed: true, wallet: null }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
