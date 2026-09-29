@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import type { LightMyRequestResponse } from 'fastify';
 import { pickSolanaWallet } from '../src/auth/privy.js';
 import { quotaWindow } from '../src/quota.js';
-import { SESSION_COOKIE } from '../src/routes/session.js';
+import { SESSION_COOKIE } from '../src/auth/session.js';
 import { testConfig, testDeps, VALID_TOKEN, WALLET } from './helpers.js';
 import { buildApp } from '../src/app.js';
 
