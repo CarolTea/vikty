@@ -1,5 +1,6 @@
-# VicTy — local development stack (DRAFT)
-# Runs the backend and its database. The frontend runs with its own dev server (not containerized).
+# VicTy — local development stack
+# Runs the backend (Node.js + TypeScript + Fastify), its database and Redis.
+# The frontend runs with its own dev server (not containerized).
 # Usage: cp backend/.env.example backend/.env  →  docker compose up --build
 
 services:
@@ -8,17 +9,19 @@ services:
       context: ./backend
     env_file: ./backend/.env
     environment:
-      # Inside the compose network the database host is the service name, not localhost
+      # Inside the compose network the hosts are the service names, not localhost
       DATABASE_URL: postgres://vikty:vikty@db:5432/vikty
+      REDIS_URL: redis://redis:6379
     ports:
       - "3001:3001"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   # Persistence for plans, operation intents, requestId, signatures and states.
-  # Postgres is a proposal — confirm when the backend stack is chosen.
   db:
     image: postgres:16-alpine
     environment:
@@ -31,6 +34,17 @@ services:
       - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vikty -d vikty"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Rate limits and the anonymous interpretation quota (counters with expiry).
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
