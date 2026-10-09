@@ -1,6 +1,7 @@
 import { PrivyClient } from '@privy-io/node';
 import { Redis } from 'ioredis';
 import { noInterpreterYet, type ConvictionInterpreter } from './ai/interpreter.js';
+import { openAIInterpreter } from './ai/openai.js';
 import { PrivyWalletResolver, type WalletResolver } from './auth/privy.js';
 import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile.js';
 import type { Config } from './config.js';
@@ -51,8 +52,8 @@ export function createDeps(config: Config): Deps & { db: Db } {
     wallets: new PrivyWalletResolver(privy, redis),
     plans: noPlansYet,
     botCheck: config.TURNSTILE_SECRET_KEY ? new TurnstileBotCheck(config.TURNSTILE_SECRET_KEY) : skipBotCheck,
-    // No AI provider chosen yet: free-text interpretations answer 503 AI_UNAVAILABLE.
-    interpreter: noInterpreterYet,
+    // Without a key (allowed outside production), free-text interpretations answer 503 AI_UNAVAILABLE.
+    interpreter: config.AI_API_KEY ? openAIInterpreter(config.AI_API_KEY, config.AI_MODEL) : noInterpreterYet,
     interpretations: new PgInterpretationStore(db),
     db,
     redis,

@@ -1,3 +1,4 @@
+import { DEFAULT_AI_MODEL } from './ai/openai.js';
 import { z } from 'zod';
 
 const secret = z.string().default('');
@@ -15,7 +16,9 @@ const schema = z
     JUPITER_API_URL: z.string().url().default('https://api.jup.ag'),
     JUPITER_API_KEY: secret,
 
+    // OpenAI. Without a key, free-text interpretations answer 503 AI_UNAVAILABLE.
     AI_API_KEY: secret,
+    AI_MODEL: z.string().min(1).default(DEFAULT_AI_MODEL),
 
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),

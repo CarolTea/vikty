@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'ANON_QUOTA_USED'
   | 'WALLET_QUOTA_USED'
   | 'BOT_CHECK_FAILED'
+  | 'OUT_OF_SCOPE'
   | 'WALLET_MISMATCH'
   | 'NOT_FOUND'
   | 'IDEMPOTENCY_CONFLICT'

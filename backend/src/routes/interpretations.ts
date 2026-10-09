@@ -1,4 +1,5 @@
 import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify';
+import { checkInterpretation, normalizeText, screenConviction, outOfScope } from '../ai/guard.js';
 import { aiInterpretationSchema, aiUnavailable, type ConvictionInterpreter } from '../ai/interpreter.js';
 import { bearerToken, readOrCreateSession, sessionHash } from '../auth/session.js';
 import { ApiError } from '../errors.js';
@@ -208,14 +209,18 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
   }
 };
 
-// Blank text is a validation error; over the configured limit is TEXT_TOO_LONG with details.max.
-// Length is counted in UTF-16 units, like the browser's maxlength on the front.
+// Normalized first, so invisible characters neither count nor reach the AI. Blank text is a
+// validation error; over the configured limit is TEXT_TOO_LONG with details.max (counted in UTF-16
+// units, like the browser's maxlength on the front). Text that can't be a conviction is refused here,
+// before any quota or AI call.
 function checkConviction(text: string, max: number): string {
-  const conviction = text.trim();
+  const conviction = normalizeText(text);
   if (!conviction) throw new ApiError(400, 'VALIDATION_ERROR', 'Some fields are invalid.', { fields: ['text'] });
   if (conviction.length > max) {
     throw new ApiError(400, 'TEXT_TOO_LONG', `Your thesis is over ${max} characters.`, { max });
   }
+  const refused = screenConviction(conviction);
+  if (refused) throw outOfScope(refused);
   return conviction;
 }
 
@@ -234,8 +239,9 @@ async function reserve(
   return release;
 }
 
-// Any adapter failure is AI_UNAVAILABLE, and so is an answer outside the schema. Only paths and
-// codes are logged, never values: they may echo the person's text.
+// OUT_OF_SCOPE from the adapter passes through; any other failure is AI_UNAVAILABLE, and so is an
+// answer outside the schema or one that fails the output checks. Only paths and codes are logged,
+// never values: they may echo the person's text.
 async function interpret(
   interpreter: ConvictionInterpreter,
   conviction: string,
@@ -256,7 +262,13 @@ async function interpret(
     log.warn({ issues }, 'interpreter answer outside the schema');
     throw aiUnavailable();
   }
-  return contentFromAi(parsed.data);
+
+  const checked = checkInterpretation(parsed.data, conviction);
+  if (!checked.ok) {
+    log.warn({ problems: checked.problems }, 'interpreter answer failed the output checks');
+    throw aiUnavailable();
+  }
+  return contentFromAi(checked.value);
 }
 
 function buildRecord(
