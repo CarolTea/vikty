@@ -2,12 +2,36 @@ import { z } from 'zod';
 
 const secret = z.string().default('');
 
+// Comma-separated origins (scheme + host + port). Each is checked and reduced to its origin, so
+// "https://victy.finance/" and "https://victy.finance" are the same entry.
+const origins = z
+  .string()
+  .transform((value, ctx) => {
+    const list = value.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!list.length) ctx.addIssue({ code: 'custom', message: 'at least one origin' });
+    return list.map((entry) => {
+      const url = URL.parse(entry);
+      if (!url || !/^https?:$/.test(url.protocol) || (url.pathname !== '/' && url.pathname !== '')) {
+        ctx.addIssue({ code: 'custom', message: `not an origin: ${entry}` });
+        return entry;
+      }
+      return url.origin;
+    });
+  });
+
 const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(3001),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-    WEB_ORIGIN: z.string().url(),
+    // Frontend origins allowed by CORS, e.g. https://victy.finance,https://www.victy.finance
+    WEB_ORIGIN: origins,
+    // Behind a hosting proxy (Render) the socket address is the proxy's: true reads the client
+    // address from X-Forwarded-For. Off when the server is exposed directly.
+    TRUST_PROXY: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
 
     SOLANA_CLUSTER: z.string().default('mainnet-beta'),
     SOLANA_RPC_URL: z.string().url(),
