@@ -106,13 +106,14 @@ info:
     | 409 | `QUOTE_EXPIRED` | Cotação vencida; pedir nova |
     | 409 | `MATERIAL_CHANGE` | A nova cotação mudou de forma relevante; exige nova revisão |
     | 409 | `ACTIVE_PLAN_EXISTS` | Já existe plano ativo; `details.activePlanId` |
+    | 422 | `OUT_OF_SCOPE` | O texto não é uma convicção econômica; `details.reason`: `unrelated` (outro assunto ou tentativa de mudar as regras) ou `unclear` (sem contexto pra achar uma convicção). A quota é devolvida |
     | 422 | `PLAN_INVALID` | Validador reprovou; `details.validation` |
     | 422 | `INSTRUMENT_NOT_APPROVED` / `INSTRUMENT_RESTRICTED` / `INSTRUMENT_SUSPENDED` | Instrumento não pode ser operado |
     | 422 | `NO_ROUTE` | Sem rota agora pra essa direção e quantidade |
     | 422 | `INSUFFICIENT_BALANCE` | Saldo real abaixo do necessário; `details.available` |
     | 422 | `TRANSACTION_REJECTED` | A transação falhou na verificação do backend; não se pede assinatura |
     | 429 | `RATE_LIMITED` | Muitas requisições; `retryAfter` em segundos (também no header `Retry-After`) |
-    | 503 | `AI_UNAVAILABLE` | IA fora; o front oferece tentar de novo ou usar uma tese sugerida |
+    | 503 | `AI_UNAVAILABLE` | IA fora, ou resposta dela reprovada nas verificações do backend; o front oferece tentar de novo ou usar uma tese sugerida |
     | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter, RPC, Privy ou Turnstile fora ou em timeout |
 
     ## Em aberto
@@ -295,6 +296,14 @@ paths:
           Com wallet → consome a quota da wallet.
         - `representation: "insufficient"` **não é erro**: é `201` com `limitations` explicando.
           Ausência de representação é uma resposta válida.
+        - Texto que não é convicção econômica (outro assunto, tentativa de mudar as regras da IA, ou
+          sem contexto suficiente) → `422 OUT_OF_SCOPE` com `details.reason`. A quota é devolvida.
+          Parte dos casos é barrada antes da IA (texto sem letras, instruções óbvias pra IA).
+        - **O que entra:** o texto é normalizado antes de tudo (Unicode NFKC, sem caracteres de
+          controle ou invisíveis, espaços colapsados); o limite de tamanho vale pro texto normalizado.
+        - **O que sai:** a resposta da IA só é usada se passar no schema e nas verificações do backend
+          (sem links, endereços ou e-mails, sem promessa de retorno, sem repetir o texto original,
+          coerência entre `representation`, exposições e limitações). Reprovada → `503 AI_UNAVAILABLE`.
         - O texto original não é devolvido, não é guardado e não vai pra analytics.
         - Se a IA falhar (`503`), a quota gasta é devolvida: a pessoa pode tentar de novo.
         - Token do Privy enviado mas inválido ou expirado → `401` (não cai pra sessão anônima).
@@ -360,6 +369,16 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '422':
+          description: '`OUT_OF_SCOPE`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error:
+                  code: OUT_OF_SCOPE
+                  message: We only work with beliefs about the economy. Describe a trend, sector or technology you think will grow.
+                  details: { reason: unrelated }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
@@ -1067,6 +1086,7 @@ components:
                 - ANON_QUOTA_USED
                 - WALLET_QUOTA_USED
                 - BOT_CHECK_FAILED
+                - OUT_OF_SCOPE
                 - WALLET_MISMATCH
                 - NOT_FOUND
                 - IDEMPOTENCY_CONFLICT
