@@ -1,4 +1,5 @@
 import type { InterpretationContent } from './interpretations.js';
+import type { Composition } from './proposals.js';
 
 // Suggested theses: curated ahead of time, so choosing one costs no AI call and no quota (E1 rule 1).
 export interface SuggestedThesis {
@@ -7,6 +8,9 @@ export interface SuggestedThesis {
   summary: string;
   text: string;
   interpretation: InterpretationContent;
+  // Curated composition, used instead of the AI (no quota, `curated: true`). Absent until the
+  // catalog has approved instruments for the thesis: the proposal then says so in its limitations.
+  composition?: Composition;
 }
 
 // Placeholder taken from the examples in Docs/api/openapi.yaml. The real list depends on what the

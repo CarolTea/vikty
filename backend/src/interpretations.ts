@@ -70,6 +70,24 @@ export function contentFromAi(ai: AiInterpretation): InterpretationContent {
 
 export interface InterpretationStore {
   create(record: InterpretationRecord): Promise<void>;
+  get(id: string): Promise<InterpretationRecord | null>;
+}
+
+interface InterpretationRow {
+  id: string;
+  session_hash: string;
+  wallet: string | null;
+  source: InterpretationRecord['source'];
+  curated: boolean;
+  suggested_thesis_id: string | null;
+  summary: string;
+  exposures: LabeledItem[];
+  exclusions: LabeledItem[];
+  restrictions: LabeledItem[];
+  ambiguities: Ambiguity[];
+  representation: Representation;
+  limitations: string[];
+  status: InterpretationStatus;
 }
 
 export class PgInterpretationStore implements InterpretationStore {
@@ -98,5 +116,26 @@ export class PgInterpretationStore implements InterpretationStore {
         r.status,
       ],
     );
+  }
+
+  async get(id: string): Promise<InterpretationRecord | null> {
+    const [row] = await this.db.query<InterpretationRow>('SELECT * FROM interpretations WHERE id = $1', [id]);
+    if (!row) return null;
+    return {
+      id: row.id,
+      sessionHash: row.session_hash,
+      wallet: row.wallet,
+      source: row.source,
+      curated: row.curated,
+      suggestedThesisId: row.suggested_thesis_id,
+      summary: row.summary,
+      exposures: row.exposures,
+      exclusions: row.exclusions,
+      restrictions: row.restrictions,
+      ambiguities: row.ambiguities,
+      representation: row.representation,
+      limitations: row.limitations,
+      status: row.status,
+    };
   }
 }

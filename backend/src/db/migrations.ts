@@ -29,6 +29,31 @@ export const migrations: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '002_proposals',
+    sql: `
+      -- A composition for an interpretation and a budget. Items keep what the AI (or the curation)
+      -- proposed; instrument data (symbol, mint, risks) is read from the registry when serving.
+      CREATE TABLE proposals (
+        id                      text PRIMARY KEY,
+        interpretation_id       text NOT NULL REFERENCES interpretations (id),
+        -- Same owner as the interpretation it came from.
+        session_hash            text NOT NULL,
+        wallet                  text,
+        curated                 boolean NOT NULL,
+        -- Decimal string, as in the contract; never a float.
+        budget_usdc             text NOT NULL,
+        items                   jsonb NOT NULL,
+        -- Snapshot of the interpretation's exposures, for PARTIAL_REPRESENTATION.
+        exposures               jsonb NOT NULL,
+        excluded_instrument_ids jsonb NOT NULL,
+        limitations             jsonb NOT NULL,
+        created_at              timestamptz NOT NULL DEFAULT now()
+      );
+      -- A new budget for the same interpretation reuses its latest composition.
+      CREATE INDEX proposals_interpretation_idx ON proposals (interpretation_id, created_at DESC);
+    `,
+  },
 ];
 
 // Runs at startup, before the server listens. Each migration and its bookkeeping row go in one

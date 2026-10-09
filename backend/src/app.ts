@@ -6,6 +6,7 @@ import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
 import { healthRoutes } from './routes/health.js';
 import { interpretationRoutes } from './routes/interpretations.js';
+import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/session.js';
 import { validatorCompiler } from './validation.js';
 
@@ -81,6 +82,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
     async (api) => {
       await api.register(sessionRoutes);
       await api.register(interpretationRoutes);
+      await api.register(proposalRoutes);
     },
     { prefix: '/api/v1' },
   );

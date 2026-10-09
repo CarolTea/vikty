@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { migrate } from '../src/db/migrations.js';
 import { PgInterpretationStore, type InterpretationRecord } from '../src/interpretations.js';
+import { PgProposalStore, type ProposalRecord } from '../src/proposals.js';
 import { testDb } from './helpers.js';
 
 const record: InterpretationRecord = {
@@ -24,7 +25,7 @@ const record: InterpretationRecord = {
 describe('migrations', () => {
   it('apply once and are skipped on the next start', async () => {
     const db = await testDb();
-    assert.deepEqual(await migrate(db), ['001_interpretations']);
+    assert.deepEqual(await migrate(db), ['001_interpretations', '002_proposals']);
     assert.deepEqual(await migrate(db), []);
     await db.close();
   });
@@ -55,6 +56,53 @@ describe('PgInterpretationStore', () => {
     const db = await testDb();
     await migrate(db);
     await assert.rejects(new PgInterpretationStore(db).create({ ...record, status: 'done' as never }));
+    await db.close();
+  });
+
+  it('reads an interpretation back, or null', async () => {
+    const db = await testDb();
+    await migrate(db);
+    const store = new PgInterpretationStore(db);
+    await store.create(record);
+    assert.deepEqual(await store.get(record.id), record);
+    assert.equal(await store.get('int_nope'), null);
+    await db.close();
+  });
+});
+
+describe('PgProposalStore', () => {
+  const proposal: ProposalRecord = {
+    id: 'prop_1',
+    interpretationId: record.id,
+    sessionHash: record.sessionHash,
+    wallet: null,
+    curated: false,
+    budgetUsdc: '500.00',
+    items: [{ instrumentId: 'ins_usdc', exposureIds: ['exp_1'], weightBps: 10_000, rationale: 'Liquidity.', state: 'active' }],
+    exposures: record.exposures,
+    excludedInstrumentIds: ['ins_ondo_nvda'],
+    limitations: ['Only part of the theme is covered.'],
+  };
+
+  it('stores a proposal, reads it back and finds the latest per interpretation', async () => {
+    const db = await testDb();
+    await migrate(db);
+    await new PgInterpretationStore(db).create(record);
+    const store = new PgProposalStore(db);
+
+    await store.create(proposal);
+    await store.create({ ...proposal, id: 'prop_2', budgetUsdc: '900' });
+    assert.deepEqual(await store.get('prop_1'), proposal);
+    assert.equal(await store.get('prop_nope'), null);
+    assert.equal((await store.latestFor(record.id))?.id, 'prop_2');
+    assert.equal(await store.latestFor('int_other'), null);
+    await db.close();
+  });
+
+  it('refuses a proposal for an interpretation that does not exist', async () => {
+    const db = await testDb();
+    await migrate(db);
+    await assert.rejects(new PgProposalStore(db).create({ ...proposal, interpretationId: 'int_nope' }));
     await db.close();
   });
 });

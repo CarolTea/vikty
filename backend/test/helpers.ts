@@ -1,6 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
+import type { AiComposition, CompositionInput, ProposalComposer } from '../src/ai/composer.js';
 import type { AiInterpretation, ConvictionInterpreter } from '../src/ai/interpreter.js';
 import type { BotCheck } from '../src/auth/turnstile.js';
+import type { AvailabilityLookup } from '../src/availability.js';
+import { findInstrument, type Catalog, type Instrument } from '../src/catalog/instruments.js';
+import type { Availability } from '../src/composition.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/index.js';
@@ -8,6 +12,7 @@ import type { Deps } from '../src/deps.js';
 import { ApiError } from '../src/errors.js';
 import type { InterpretationRecord, InterpretationStore } from '../src/interpretations.js';
 import { noPlansYet } from '../src/plans.js';
+import type { ProposalRecord, ProposalStore } from '../src/proposals.js';
 import type { QuotaStore } from '../src/quota.js';
 
 export const WALLET = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
@@ -104,6 +109,83 @@ export class MemoryInterpretationStore implements InterpretationStore {
     if (this.fail) throw new Error('database down');
     this.records.push(record);
   }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+}
+
+// Registry entries approved for tests (the real registry approves only USDC so far), plus one that
+// stays unavailable.
+export const approvedForTest = (id: string): Instrument => ({
+  ...findInstrument(id)!,
+  status: 'approved',
+  mint: `${id.replace(/[^A-Za-z1-9]/g, '').slice(0, 30)}1111111111111111`,
+  decimals: 6,
+});
+
+export class FakeCatalog implements Catalog {
+  readonly instruments = new Map<string, Instrument>(
+    [
+      approvedForTest('ins_ondo_nvda'),
+      approvedForTest('ins_ondo_amd'),
+      approvedForTest('ins_ondo_vrt'),
+      approvedForTest('ins_ondo_ceg'),
+      findInstrument('ins_usdc')!,
+      findInstrument('ins_ondo_msft')!,
+    ].map((i) => [i.id, i]),
+  );
+  approved = () => [...this.instruments.values()].filter((i) => i.status === 'approved');
+  find = (id: string) => this.instruments.get(id);
+}
+
+export const AI_COMPOSITION: AiComposition = {
+  items: [
+    { instrumentId: 'ins_ondo_nvda', exposureIds: ['exp_1'], weightBps: 3500, rationale: 'Represents accelerated compute demand.' },
+    { instrumentId: 'ins_ondo_amd', exposureIds: ['exp_1'], weightBps: 2500, rationale: 'A second chipmaker, so the thesis does not rest on one company.' },
+    { instrumentId: 'ins_ondo_vrt', exposureIds: ['exp_2'], weightBps: 2500, rationale: 'Power and cooling equipment for data centers.' },
+    { instrumentId: 'ins_usdc', exposureIds: [], weightBps: 1500, rationale: 'Liquidity kept aside.' },
+  ],
+  excludedInstrumentIds: [],
+  limitations: [],
+};
+
+// Answers `answer` (AI_COMPOSITION by default), or throws it when it is an Error; records the input.
+export class FakeComposer implements ProposalComposer {
+  readonly calls: CompositionInput[] = [];
+  answer: unknown = AI_COMPOSITION;
+
+  async compose(input: CompositionInput) {
+    this.calls.push(input);
+    if (this.answer instanceof Error) throw this.answer;
+    return this.answer;
+  }
+}
+
+export class MemoryProposalStore implements ProposalStore {
+  readonly records: ProposalRecord[] = [];
+
+  async create(record: ProposalRecord) {
+    this.records.push(record);
+  }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async latestFor(interpretationId: string) {
+    return this.records.findLast((r) => r.interpretationId === interpretationId) ?? null;
+  }
+}
+
+// Every instrument buyable unless set otherwise.
+export class FakeAvailability implements AvailabilityLookup {
+  readonly states = new Map<string, Availability>();
+
+  async check(ids: string[]) {
+    const open: Availability = { buy: 'available', sell: 'available', checkedAt: '2026-10-09T12:00:00.000Z' };
+    return new Map(ids.map((id) => [id, this.states.get(id) ?? open]));
+  }
 }
 
 // Real Postgres (PGlite, in memory) behind the app's Db interface.
@@ -125,6 +207,10 @@ type TestDeps = Deps & {
   botCheck: FakeBotCheck;
   interpreter: FakeInterpreter;
   interpretations: MemoryInterpretationStore;
+  composer: FakeComposer;
+  proposals: MemoryProposalStore;
+  catalog: FakeCatalog;
+  availability: FakeAvailability;
 };
 
 export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
@@ -141,6 +227,10 @@ export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
     botCheck: new FakeBotCheck(),
     interpreter: new FakeInterpreter(),
     interpretations: new MemoryInterpretationStore(),
+    composer: new FakeComposer(),
+    proposals: new MemoryProposalStore(),
+    catalog: new FakeCatalog(),
+    availability: new FakeAvailability(),
     ...overrides,
   } as TestDeps;
 }

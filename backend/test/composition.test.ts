@@ -150,10 +150,14 @@ describe('validateDraft', () => {
     assert.equal(noRoute.validation.valid, true, 'a warning does not invalidate');
     assert.equal(noRoute.validation.conclusive, true);
 
-    availability.delete('ins_ondo_ceg');
+    availability.set('ins_ondo_ceg', { buy: 'unknown', sell: 'unknown', checkedAt: null });
     const unknown = validateDraft('500', VALID, context({ availability }));
     assert.equal(unknown.validation.conclusive, false);
     assert.equal(unknown.validation.valid, true);
+    assert.deepEqual(codes(unknown), ['NO_ROUTE:ins_ondo_vrt'], 'unknown is not a missing route');
+
+    availability.delete('ins_ondo_ceg');
+    assert.equal(validateDraft('500', VALID, context({ availability })).validation.conclusive, false);
   });
 
   it('expects unique instrument ids', () => {

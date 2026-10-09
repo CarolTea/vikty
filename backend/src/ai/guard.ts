@@ -60,6 +60,11 @@ const FORBIDDEN_OUTPUT: { problem: string; pattern: RegExp }[] = [
   },
 ];
 
+// Codes of the forbidden things found in one piece of AI text; empty when clean.
+export function forbiddenContent(text: string): string[] {
+  return FORBIDDEN_OUTPUT.filter(({ pattern }) => pattern.test(text)).map(({ problem }) => problem);
+}
+
 // A field this long that matches the conviction is a copy of it, and the conviction is never stored.
 const ECHO_MIN_CHARS = 40;
 
@@ -92,7 +97,7 @@ export function checkInterpretation(ai: AiInterpretation, conviction: string): I
 
   const source = normalizeText(conviction).toLowerCase();
   for (const text of allTexts(value)) {
-    for (const { problem, pattern } of FORBIDDEN_OUTPUT) if (pattern.test(text)) problems.add(problem);
+    for (const problem of forbiddenContent(text)) problems.add(problem);
     const lower = text.toLowerCase();
     if (
       (source.length >= ECHO_MIN_CHARS && lower.includes(source)) ||

@@ -86,3 +86,19 @@ export function instrumentSummary(i: Instrument): InstrumentSummary {
     issuerName: i.issuerName,
   };
 }
+
+// What routes use to reach the registry. Tests pass their own approved instruments.
+export interface Catalog {
+  approved(): Instrument[];
+  find(id: string): Instrument | undefined;
+}
+
+export const registryCatalog: Catalog = { approved: approvedInstruments, find: findInstrument };
+
+// Registry risk tags as text for the screen: 'market-risk' → 'Market risk'.
+export function riskLabels(i: Instrument): string[] {
+  return i.riskTags.map((tag) => {
+    const text = tag.replaceAll('-', ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  });
+}
