@@ -35,6 +35,9 @@ const schema = z
     // Product limits; the API contract treats these as configuration, not constants.
     CONVICTION_MAX_CHARS: z.coerce.number().int().positive().default(600),
     WALLET_DAILY_INTERPRETATIONS: z.coerce.number().int().nonnegative().default(20),
+    // "Ask VicTy" about a proposal: question length and questions per proposal.
+    EXPLANATION_MAX_CHARS: z.coerce.number().int().positive().default(300),
+    EXPLANATIONS_PER_PROPOSAL: z.coerce.number().int().nonnegative().default(5),
     // Composition policy (PRD §9.4). Weights in basis points; budget in USDC, as decimal strings.
     MAX_WEIGHT_BPS: bps.default(4000),
     MIN_WEIGHT_BPS: bps.default(500),

@@ -60,6 +60,20 @@ export class MemoryQuotaStore implements QuotaStore {
   async releaseWallet(address: string, day: string) {
     bump(this.wallet, `${address}:${day}`, -1);
   }
+
+  readonly explanations = new Map<string, number>();
+
+  async explanationsUsed(proposalId: string) {
+    return this.explanations.get(proposalId) ?? 0;
+  }
+
+  async reserveExplanation(proposalId: string) {
+    return bump(this.explanations, proposalId, 1);
+  }
+
+  async releaseExplanation(proposalId: string) {
+    bump(this.explanations, proposalId, -1);
+  }
 }
 
 function bump(map: Map<string, number>, key: string, by: number) {
@@ -233,6 +247,7 @@ type TestDeps = Deps & {
   interpreter: FakeInterpreter;
   interpretations: MemoryInterpretationStore;
   composer: FakeComposer;
+  explainer: FakeExplainer;
   proposals: MemoryProposalStore;
   catalog: FakeCatalog;
   availability: FakeAvailability;
@@ -253,6 +268,7 @@ export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
     interpreter: new FakeInterpreter(),
     interpretations: new MemoryInterpretationStore(),
     composer: new FakeComposer(),
+    explainer: new FakeExplainer(),
     proposals: new MemoryProposalStore(),
     catalog: new FakeCatalog(),
     availability: new FakeAvailability(),

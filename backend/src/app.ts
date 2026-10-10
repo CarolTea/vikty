@@ -5,6 +5,7 @@ import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
 import { healthRoutes } from './routes/health.js';
+import { explanationRoutes } from './routes/explanations.js';
 import { instrumentRoutes } from './routes/instruments.js';
 import { interpretationRoutes } from './routes/interpretations.js';
 import { proposalRoutes } from './routes/proposals.js';
@@ -86,6 +87,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
       await api.register(thesisRoutes);
       await api.register(interpretationRoutes);
       await api.register(proposalRoutes);
+      await api.register(explanationRoutes);
       await api.register(instrumentRoutes);
     },
     { prefix: '/api/v1' },

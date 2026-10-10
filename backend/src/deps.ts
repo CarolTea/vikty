@@ -1,8 +1,9 @@
 import { PrivyClient } from '@privy-io/node';
 import { Redis } from 'ioredis';
 import { noComposerYet, type ProposalComposer } from './ai/composer.js';
+import { noExplainerYet, type ProposalExplainer } from './ai/explainer.js';
 import { noInterpreterYet, type ConvictionInterpreter } from './ai/interpreter.js';
-import { OpenAIComposer, OpenAIInterpreter, openAIClient } from './ai/openai.js';
+import { OpenAIComposer, OpenAIExplainer, OpenAIInterpreter, openAIClient } from './ai/openai.js';
 import { PrivyWalletResolver, type WalletResolver } from './auth/privy.js';
 import { noAvailabilityYet, type AvailabilityLookup } from './availability.js';
 import { registryCatalog, type Catalog } from './catalog/instruments.js';
@@ -24,6 +25,7 @@ export interface Deps {
   interpreter: ConvictionInterpreter;
   interpretations: InterpretationStore;
   composer: ProposalComposer;
+  explainer: ProposalExplainer;
   proposals: ProposalStore;
   catalog: Catalog;
   availability: AvailabilityLookup;
@@ -65,6 +67,7 @@ export function createDeps(config: Config): Deps & { db: Db } {
     interpreter: openai ? new OpenAIInterpreter(openai, config.AI_MODEL) : noInterpreterYet,
     interpretations: new PgInterpretationStore(db),
     composer: openai ? new OpenAIComposer(openai, config.AI_MODEL) : noComposerYet,
+    explainer: openai ? new OpenAIExplainer(openai, config.AI_MODEL) : noExplainerYet,
     proposals: new PgProposalStore(db),
     catalog: registryCatalog,
     // No Jupiter adapter yet: every instrument is `unknown` and validations are inconclusive.
