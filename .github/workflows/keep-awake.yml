@@ -1,0 +1,30 @@
+# Mantém a API acordada no plano grátis do Render, que dorme após 15 min sem tráfego e leva ~1 min
+# pra voltar. Um GET em /health a cada 10 min basta: as 750 h grátis/mês cobrem um serviço ligado
+# o mês inteiro.
+# A URL vem da variável do repositório API_HEALTH_URL (Settings → Secrets and variables → Actions →
+# Variables), ex.: https://api.victy.finance/health. Sem ela, o job não faz nada.
+# O GitHub pode atrasar execuções agendadas e as desliga após 60 dias sem atividade no repositório.
+name: Keep API awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: keep-awake
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    if: vars.API_HEALTH_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      # Até 2 min: se o serviço estava dormindo, o primeiro acesso espera ele subir.
+      - name: GET /health
+        env:
+          URL: ${{ vars.API_HEALTH_URL }}
+        run: curl --fail --silent --show-error --max-time 120 --retry 2 --retry-delay 10 "$URL"

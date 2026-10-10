@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import { loadConfig } from '../src/config.js';
-import { testApp } from './helpers.js';
+import { testApp, testConfig } from './helpers.js';
 
 describe('app', () => {
   let app: FastifyInstance;
@@ -46,9 +46,62 @@ describe('app', () => {
     const methods = String(res.headers['access-control-allow-methods']).split(/,\s*/);
     assert.ok(methods.includes('PATCH') && methods.includes('PUT'), methods.join());
   });
+
+  it('allows every configured origin, with credentials', async () => {
+    const multi = await testApp({ config: testConfig({ WEB_ORIGIN: 'https://victy.finance, https://www.victy.finance/' }) });
+    for (const origin of ['https://victy.finance', 'https://www.victy.finance']) {
+      const res = await multi.inject({
+        method: 'OPTIONS',
+        url: '/api/v1/session',
+        headers: { origin, 'access-control-request-method': 'GET' },
+      });
+      assert.equal(res.headers['access-control-allow-origin'], origin);
+      assert.equal(res.headers['access-control-allow-credentials'], 'true');
+    }
+    const other = await multi.inject({
+      method: 'OPTIONS',
+      url: '/api/v1/session',
+      headers: { origin: 'https://victy.finance.evil.example', 'access-control-request-method': 'GET' },
+    });
+    assert.equal(other.headers['access-control-allow-origin'], undefined);
+    await multi.close();
+  });
+});
+
+describe('trustProxy', () => {
+  async function ipFor(trust: string | undefined) {
+    const app = await testApp({ config: testConfig(trust === undefined ? {} : { TRUST_PROXY: trust }) });
+    app.get('/ip', async (request) => ({ ip: request.ip }));
+    const res = await app.inject({ method: 'GET', url: '/ip', remoteAddress: '10.0.0.1', headers: { 'x-forwarded-for': '203.0.113.7' } });
+    await app.close();
+    return res.json().ip;
+  }
+
+  it('ignores X-Forwarded-For by default', async () => {
+    assert.equal(await ipFor(undefined), '10.0.0.1');
+  });
+
+  it('reads the client address behind the proxy when enabled', async () => {
+    assert.equal(await ipFor('true'), '203.0.113.7');
+  });
+
+  it('accepts only true or false', () => {
+    assert.equal(testConfig({ TRUST_PROXY: 'true' }).TRUST_PROXY, true);
+    assert.throws(() => testConfig({ TRUST_PROXY: 'yes' }), /TRUST_PROXY/);
+  });
 });
 
 describe('config', () => {
+  it('reads WEB_ORIGIN as a list of origins', () => {
+    assert.deepEqual(testConfig({ WEB_ORIGIN: 'https://victy.finance/ , https://www.victy.finance' }).WEB_ORIGIN, [
+      'https://victy.finance',
+      'https://www.victy.finance',
+    ]);
+    for (const bad of ['', 'victy.finance', 'https://victy.finance/app', 'ftp://victy.finance']) {
+      assert.throws(() => testConfig({ WEB_ORIGIN: bad }), /WEB_ORIGIN/, bad);
+    }
+  });
+
   it('rejects production without secrets', () => {
     assert.throws(
       () =>

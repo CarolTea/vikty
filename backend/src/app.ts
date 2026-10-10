@@ -18,6 +18,9 @@ import { validatorCompiler } from './validation.js';
 export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   const { config } = deps;
   const app = Fastify({
+    // `request.ip` is then the client's, not the proxy's. The client can forge the header, which is
+    // fine while the IP is only a hint to Turnstile; a limit by IP must not trust it as is.
+    trustProxy: config.TRUST_PROXY,
     logger: {
       level: config.LOG_LEVEL,
       // Tokens and session cookies never reach the logs.
