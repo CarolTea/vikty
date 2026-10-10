@@ -1,0 +1,64 @@
+# VicTy — Render Blueprint (https://render.com/docs/blueprint-spec)
+# The API on a free web service and its Redis on a free Key Value instance, both in Virginia.
+# Postgres lives on Neon (Render's free Postgres expires after 30 days): create the Neon project in
+# AWS us-east-1, next to Virginia, since every query crosses that distance.
+# Secrets marked `sync: false` are asked once, when the Blueprint is created, and never committed.
+
+services:
+  - type: web
+    name: victy-api
+    runtime: docker
+    plan: free
+    # Can't be changed after creation.
+    region: virginia
+    # Only changes under backend/ trigger a deploy.
+    rootDir: backend
+    # Both relative to the repo root.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # NODE_ENV=production comes from the Dockerfile; Render sets PORT.
+      - key: WEB_ORIGIN
+        value: https://victy.finance,https://www.victy.finance
+      # Render's proxy sits in front of the app.
+      - key: TRUST_PROXY
+        value: 'true'
+      - key: SOLANA_CLUSTER
+        value: mainnet-beta
+      - key: SOLANA_RPC_URL
+        sync: false
+      - key: JUPITER_API_KEY
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      # Neon connection string with ?sslmode=require (use the pooled host).
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: victy-redis
+          property: connectionString
+      - key: PRIVY_APP_ID
+        sync: false
+      - key: PRIVY_APP_SECRET
+        sync: false
+      - key: PRIVY_VERIFICATION_KEY
+        sync: false
+      # Signs the anonymous session cookie. Generated once; changing it ends every anonymous session.
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+
+  - type: keyvalue
+    name: victy-redis
+    plan: free
+    region: virginia
+    # Reachable only from Render's private network (the API), never from the internet.
+    ipAllowList: []
+    # Quota counters must never be evicted to make room: that would hand out free interpretations.
+    # They are tiny and expire on their own, so 25 MB is far from full.
+    maxmemoryPolicy: noeviction
