@@ -1,4 +1,4 @@
-import type { FastifyBaseLogger, FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify';
 import { checkInterpretation, normalizeText, screenConviction, outOfScope } from '../ai/guard.js';
 import { aiInterpretationSchema, aiUnavailable, type ConvictionInterpreter } from '../ai/interpreter.js';
 import { bearerToken, canAccess, readOrCreateSession, sessionHash, type Owner } from '../auth/session.js';
@@ -14,6 +14,7 @@ import {
 } from '../interpretations.js';
 import { ANON_FREE_INTERPRETATIONS, quotaSchema, quotaWindow } from '../quota.js';
 import { findSuggestedThesis } from '../theses.js';
+import { idParam, ownerOf, requireHuman, reserve } from './shared.js';
 
 type Body =
   | { source: 'free_text'; text: string; botCheckToken?: string; deviceHash?: string }
@@ -48,7 +49,6 @@ const bodySchema = {
   ],
 } as const;
 
-const idParam = { type: 'object', required: ['id'], properties: { id: { type: 'string', maxLength: 64 } } } as const;
 const idList = { type: 'array', maxItems: 20, items: { type: 'string', maxLength: 64 } } as const;
 const labelList = { type: 'array', maxItems: 10, items: { type: 'string', maxLength: 200 } } as const;
 
@@ -136,7 +136,7 @@ const interpretationSchema = {
 } as const;
 
 export const interpretationRoutes: FastifyPluginAsync = async (app) => {
-  const { config, quota, wallets, botCheck, interpreter, interpretations } = app.deps;
+  const { config, quota, wallets, interpreter, interpretations } = app.deps;
 
   // - `suggested`: curated interpretation, no AI and no quota.
   // - `free_text` without a wallet: Turnstile, then the one free interpretation.
@@ -169,7 +169,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
         record = buildRecord(owner, 'suggested', thesis.id, thesis.interpretation);
         await interpretations.create(record);
       } else {
-        if (!wallet) await requireHuman(body.botCheckToken, request.ip);
+        if (!wallet) await requireHuman(app.deps, body.botCheckToken, request.ip);
 
         const release = wallet
           ? await reserve(
@@ -222,14 +222,6 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  async function ownerOf(request: FastifyRequest, reply: FastifyReply): Promise<Owner> {
-    reply.header('Cache-Control', 'no-store');
-    reply.header('Vary', 'Authorization, Cookie');
-    const sessionId = readOrCreateSession(request, reply, config.NODE_ENV === 'production');
-    const token = bearerToken(request);
-    return { sessionHash: sessionHash(sessionId), wallet: token ? await wallets.resolve(token) : null };
-  }
-
   async function ownInterpretation(id: string, owner: Owner): Promise<InterpretationRecord> {
     const record = await interpretations.get(id);
     if (!record || !canAccess(record, owner)) throw new ApiError(404, 'NOT_FOUND', 'Not found.');
@@ -241,7 +233,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
     '/interpretations/:id',
     { schema: { params: idParam, response: { 200: interpretationSchema } } },
     async (request, reply) => {
-      const owner = await ownerOf(request, reply);
+      const owner = await ownerOf(app.deps, request, reply);
       return publicFields(await ownInterpretation(request.params.id, owner));
     },
   );
@@ -252,7 +244,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
     '/interpretations/:id',
     { schema: { params: idParam, body: patchSchema, response: { 200: interpretationSchema } } },
     async (request, reply) => {
-      const owner = await ownerOf(request, reply);
+      const owner = await ownerOf(app.deps, request, reply);
       for (let attempt = 0; attempt < 3; attempt++) {
         const record = await ownInterpretation(request.params.id, owner);
         const next = applyPatch(record, request.body);
@@ -261,12 +253,6 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
       throw new Error('interpretation kept changing under concurrent corrections');
     },
   );
-
-  async function requireHuman(token: string | undefined, remoteIp: string): Promise<void> {
-    if (!token || !(await botCheck.verify(token, remoteIp))) {
-      throw new ApiError(403, 'BOT_CHECK_FAILED', "We couldn't verify you're human. Please try again.");
-    }
-  }
 };
 
 // Normalized first, so invisible characters neither count nor reach the AI. Blank text is a
@@ -282,21 +268,6 @@ function checkConviction(text: string, max: number): string {
   const refused = screenConviction(conviction);
   if (refused) throw outOfScope(refused);
   return conviction;
-}
-
-// Counts one use; over the limit it gives it straight back and refuses. Returns the release.
-async function reserve(
-  take: () => Promise<number>,
-  release: () => Promise<void>,
-  limit: number,
-  refusal: () => ApiError,
-): Promise<() => Promise<void>> {
-  const used = await take();
-  if (used > limit) {
-    await release();
-    throw refusal();
-  }
-  return release;
 }
 
 // OUT_OF_SCOPE from the adapter passes through; any other failure is AI_UNAVAILABLE, and so is an

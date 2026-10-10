@@ -253,3 +253,12 @@ export function applyPatch(record: InterpretationRecord, patch: InterpretationPa
   if (JSON.stringify(next) === JSON.stringify(before)) return record;
   return { ...record, ...next, status: statusOf(ambiguities), version: record.version + 1 };
 }
+
+// Answered questions as question and chosen option, the way the person saw them. Sent to the AI
+// when composing and explaining.
+export function answeredQuestions(r: Pick<InterpretationRecord, 'ambiguities'>): { question: string; answer: string }[] {
+  return r.ambiguities.flatMap((a) => {
+    const option = a.options.find((o) => o.id === a.answer);
+    return option ? [{ question: a.question, answer: option.label }] : [];
+  });
+}
