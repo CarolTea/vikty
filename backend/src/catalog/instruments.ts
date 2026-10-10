@@ -22,6 +22,17 @@ export interface Evidence {
   reviewedAt: string;
 }
 
+// What the instrument detail screen explains (contract InstrumentDetail). Written by whoever reviews
+// the instrument; required before it is approved.
+export interface InstrumentDetailContent {
+  issuerNature: string;
+  economicRights: readonly string[];
+  limitations: readonly string[];
+  costs: readonly string[];
+  howToTrade: string;
+  eligibilityNotes: readonly string[];
+}
+
 export interface Instrument {
   id: string;
   symbol: string;
@@ -47,6 +58,7 @@ export interface Instrument {
   // Where the curation started; not evidence until someone reviews it.
   sourceUrl: string;
   evidence: readonly Evidence[];
+  detail?: InstrumentDetailContent;
 }
 
 // The contract's InstrumentSummary. Only call it for an approved instrument (mint and decimals set).

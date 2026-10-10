@@ -20,6 +20,9 @@ describe('Asset Registry', () => {
       assert.match(i.mint ?? '', BASE58_MINT, i.id);
       assert.ok(Number.isInteger(i.decimals) && i.decimals! >= 0 && i.decimals! <= 18, i.id);
       assert.ok(i.evidence.length > 0, `${i.id} has no evidence`);
+      assert.ok(i.detail, `${i.id} has no detail for the instrument screen`);
+      assert.ok(i.detail.issuerNature && i.detail.howToTrade, i.id);
+      assert.ok(i.detail.economicRights.length && i.detail.limitations.length && i.detail.costs.length, i.id);
       for (const e of i.evidence) {
         assert.ok(URL.canParse(e.url), `${i.id}: ${e.url}`);
         assert.match(e.reviewedAt, /^\d{4}-\d{2}-\d{2}$/);
