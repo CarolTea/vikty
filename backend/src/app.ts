@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { createRequire } from 'node:module';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
@@ -21,7 +22,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
       level: config.LOG_LEVEL,
       // Tokens and session cookies never reach the logs.
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
-      ...(config.NODE_ENV === 'development' && { transport: { target: 'pino-pretty' } }),
+      ...(config.NODE_ENV === 'development' && hasPrettyLogs() && { transport: { target: 'pino-pretty' } }),
     },
   });
 
@@ -96,4 +97,15 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   );
 
   return app;
+}
+
+// pino-pretty is a dev dependency: present with `npm run dev`, pruned from the Docker image. Without
+// it, development logs stay JSON instead of crashing the server at startup.
+function hasPrettyLogs(): boolean {
+  try {
+    createRequire(import.meta.url).resolve('pino-pretty');
+    return true;
+  } catch {
+    return false;
+  }
 }
