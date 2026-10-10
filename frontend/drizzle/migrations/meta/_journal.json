@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790293069411,
+      "tag": "0000_create_early_access_signups",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790293143435,
+      "tag": "0001_lock_early_access_signups",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790872429600,
+      "tag": "0002_create_demo_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790876484804,
+      "tag": "0003_create_user_thesis_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790876712612,
+      "tag": "0004_enforce_thesis_ownership_relations",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790932685730,
+      "tag": "0005_demo_wallet_approval_challenges",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790945590359,
+      "tag": "0006_atomic_thesis_save",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790952014183,
+      "tag": "0007_apply_atomic_thesis_save",
+      "breakpoints": true
+    }
+  ]
+}

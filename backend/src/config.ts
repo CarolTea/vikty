@@ -1,6 +1,10 @@
+import { DEFAULT_AI_MODEL } from './ai/openai.js';
 import { z } from 'zod';
+import { parseUsdc } from './money.js';
 
 const secret = z.string().default('');
+const bps = z.coerce.number().int().min(0).max(10_000);
+const usdc = z.string().refine((v) => parseUsdc(v) !== null, 'must be a decimal USDC amount, like 500 or 12.50');
 
 // Comma-separated origins (scheme + host + port). Each is checked and reduced to its origin, so
 // "https://victy.finance/" and "https://victy.finance" are the same entry.
@@ -39,7 +43,9 @@ const schema = z
     JUPITER_API_URL: z.string().url().default('https://api.jup.ag'),
     JUPITER_API_KEY: secret,
 
+    // OpenAI. Without a key, free-text interpretations answer 503 AI_UNAVAILABLE.
     AI_API_KEY: secret,
+    AI_MODEL: z.string().min(1).default(DEFAULT_AI_MODEL),
 
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),
@@ -53,8 +59,20 @@ const schema = z
     // Product limits; the API contract treats these as configuration, not constants.
     CONVICTION_MAX_CHARS: z.coerce.number().int().positive().default(600),
     WALLET_DAILY_INTERPRETATIONS: z.coerce.number().int().nonnegative().default(20),
+    // Composition policy (PRD §9.4). Weights in basis points; budget in USDC, as decimal strings.
+    MAX_WEIGHT_BPS: bps.default(4000),
+    MIN_WEIGHT_BPS: bps.default(500),
+    MIN_BUDGET_USDC: usdc.default('1'),
+    MAX_BUDGET_USDC: usdc.default('10000'),
   })
   .superRefine((env, ctx) => {
+    if (env.MIN_WEIGHT_BPS > env.MAX_WEIGHT_BPS) {
+      ctx.addIssue({ code: 'custom', path: ['MIN_WEIGHT_BPS'], message: 'must not exceed MAX_WEIGHT_BPS' });
+    }
+    if (parseUsdc(env.MIN_BUDGET_USDC)! > parseUsdc(env.MAX_BUDGET_USDC)!) {
+      ctx.addIssue({ code: 'custom', path: ['MIN_BUDGET_USDC'], message: 'must not exceed MAX_BUDGET_USDC' });
+    }
+
     // Empty secrets are fine locally; production must have every one of them.
     if (env.NODE_ENV !== 'production') return;
     const required = [
