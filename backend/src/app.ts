@@ -8,6 +8,7 @@ import { healthRoutes } from './routes/health.js';
 import { interpretationRoutes } from './routes/interpretations.js';
 import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/session.js';
+import { thesisRoutes } from './routes/theses.js';
 import { validatorCompiler } from './validation.js';
 
 export async function buildApp(deps: Deps): Promise<FastifyInstance> {
@@ -81,6 +82,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(
     async (api) => {
       await api.register(sessionRoutes);
+      await api.register(thesisRoutes);
       await api.register(interpretationRoutes);
       await api.register(proposalRoutes);
     },

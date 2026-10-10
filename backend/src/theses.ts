@@ -1,3 +1,4 @@
+import type { Catalog } from './catalog/instruments.js';
 import type { InterpretationContent } from './interpretations.js';
 import type { Composition } from './proposals.js';
 
@@ -38,4 +39,11 @@ export const suggestedTheses: SuggestedThesis[] = [
 
 export function findSuggestedThesis(id: string): SuggestedThesis | undefined {
   return suggestedTheses.find((t) => t.id === id);
+}
+
+// Listed only when the catalog can represent it: a curated composition whose every instrument is
+// approved. Until then the thesis still works by id, but isn't offered (contract, route 02).
+export function representable(thesis: SuggestedThesis, catalog: Catalog): boolean {
+  const items = thesis.composition?.items ?? [];
+  return items.length > 0 && items.every((i) => catalog.find(i.instrumentId)?.status === 'approved');
 }
