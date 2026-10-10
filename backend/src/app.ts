@@ -37,6 +37,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(cors, {
     origin: config.WEB_ORIGIN,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH'],
   });
 
   // Production requires SESSION_SECRET (see config.ts). Locally an empty one gets a random

@@ -35,6 +35,17 @@ describe('app', () => {
     });
     assert.notEqual(res.headers['access-control-allow-origin'], 'https://evil.example');
   });
+
+  it('lets the app origin send PUT and PATCH', async () => {
+    const res = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/v1/interpretations/int_x',
+      headers: { origin: 'http://localhost:3000', 'access-control-request-method': 'PATCH' },
+    });
+    assert.equal(res.headers['access-control-allow-origin'], 'http://localhost:3000');
+    const methods = String(res.headers['access-control-allow-methods']).split(/,\s*/);
+    assert.ok(methods.includes('PATCH') && methods.includes('PUT'), methods.join());
+  });
 });
 
 describe('config', () => {
