@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import OpenAI from 'openai';
-import { OpenAIComposer, OpenAIInterpreter } from '../src/ai/openai.js';
+import { OpenAIComposer, OpenAIExplainer, OpenAIInterpreter } from '../src/ai/openai.js';
 import { buildApp } from '../src/app.js';
 import type { ApiError } from '../src/errors.js';
-import { AI_ANSWER, AI_COMPOSITION, HUMAN_TOKEN, testDeps } from './helpers.js';
+import { AI_ANSWER, AI_COMPOSITION, AI_EXPLANATION, HUMAN_TOKEN, testDeps } from './helpers.js';
 
 const CONVICTION = 'AI will increase demand for electricity.';
 
@@ -36,7 +36,7 @@ function fakeOpenAI(outputs: { body: unknown; status?: string }[]) {
       });
     },
   });
-  return { interpreter: new OpenAIInterpreter(client, 'test-model'), composer: new OpenAIComposer(client, 'test-model'), requests };
+  return { interpreter: new OpenAIInterpreter(client, 'test-model'), composer: new OpenAIComposer(client, 'test-model'), explainer: new OpenAIExplainer(client, 'test-model'), requests };
 }
 
 const verdict = (v: string) => ({ body: { verdict: v } });
@@ -174,5 +174,36 @@ describe('OpenAIComposer', () => {
   it('throws on an answer outside the schema or an incomplete response', async () => {
     await assert.rejects(fakeOpenAI([{ body: { ...AI_COMPOSITION, extra: 1 } }]).composer.compose(input));
     await assert.rejects(fakeOpenAI([{ body: AI_COMPOSITION, status: 'incomplete' }]).composer.compose(input));
+  });
+});
+
+describe('OpenAIExplainer', () => {
+  const input = {
+    question: 'Why is NVDAon here?',
+    instrumentId: 'ins_ondo_nvda',
+    thesis: { summary: 'AI infrastructure.', exposures: [], exclusions: [], restrictions: [], answers: [] },
+    items: [],
+    limitations: [],
+  };
+
+  it('checks the question, then explains', async () => {
+    const { explainer, requests } = fakeOpenAI([verdict('IN_SCOPE'), { body: AI_EXPLANATION }]);
+    assert.deepEqual(await explainer.explain(input), AI_EXPLANATION);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0]!.text.format.name, 'explain_scope_check');
+    assert.equal(JSON.parse(requests[0]!.input).question, input.question);
+    assert.equal(requests[1]!.text.format.name, 'explain');
+    assert.match(requests[1]!.instructions, /Prompt version: explain-v1/);
+    assert.deepEqual(JSON.parse(requests[1]!.input), input);
+  });
+
+  it('throws OUT_OF_SCOPE with the question message when the gate says so', async () => {
+    const { explainer, requests } = fakeOpenAI([verdict('OUT_OF_SCOPE')]);
+    await assert.rejects(explainer.explain(input), (err: ApiError) => {
+      assert.equal(err.code, 'OUT_OF_SCOPE');
+      assert.equal(err.message, 'We can only answer questions about this thesis and its assets.');
+      return true;
+    });
+    assert.equal(requests.length, 1);
   });
 });

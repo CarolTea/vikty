@@ -1,5 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
 import type { AiComposition, CompositionInput, ProposalComposer } from '../src/ai/composer.js';
+import type { AiExplanation, ExplanationInput, ProposalExplainer } from '../src/ai/explainer.js';
 import type { AiInterpretation, ConvictionInterpreter } from '../src/ai/interpreter.js';
 import type { BotCheck } from '../src/auth/turnstile.js';
 import type { AvailabilityLookup } from '../src/availability.js';
@@ -182,6 +183,23 @@ export class MemoryProposalStore implements ProposalStore {
 
   async latestFor(interpretationId: string, version: number) {
     return this.records.findLast((r) => r.interpretationId === interpretationId && r.interpretationVersion === version) ?? null;
+  }
+}
+
+export const AI_EXPLANATION: AiExplanation = {
+  explanation: 'NVDAon represents accelerated compute, the first exposure of your thesis, at 35%.',
+  limitations: ['It is a tokenized product, not direct ownership of the shares.'],
+};
+
+// Answers `answer` (AI_EXPLANATION by default), or throws it when it is an Error; records the input.
+export class FakeExplainer implements ProposalExplainer {
+  readonly calls: ExplanationInput[] = [];
+  answer: unknown = AI_EXPLANATION;
+
+  async explain(input: ExplanationInput) {
+    this.calls.push(input);
+    if (this.answer instanceof Error) throw this.answer;
+    return this.answer;
   }
 }
 

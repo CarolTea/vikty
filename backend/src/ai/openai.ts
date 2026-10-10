@@ -2,11 +2,15 @@ import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { aiCompositionSchema, type AiComposition, type CompositionInput, type ProposalComposer } from './composer.js';
+import { aiExplanationSchema, type AiExplanation, type ExplanationInput, type ProposalExplainer } from './explainer.js';
 import { outOfScope } from './guard.js';
 import { aiInterpretationSchema, type AiInterpretation, type ConvictionInterpreter } from './interpreter.js';
 import {
   COMPOSE_INSTRUCTIONS,
   COMPOSE_PROMPT_VERSION,
+  EXPLAIN_INSTRUCTIONS,
+  EXPLAIN_PROMPT_VERSION,
+  EXPLAIN_SCOPE_INSTRUCTIONS,
   INTERPRET_INSTRUCTIONS,
   PROMPT_VERSION,
   SCOPE_INSTRUCTIONS,
@@ -63,6 +67,25 @@ export class OpenAIComposer implements ProposalComposer {
       input: JSON.stringify(input),
       maxOutputTokens: 3500,
     });
+  }
+}
+
+// Like the interpreter: a scope gate on the question, then the answer. A rejected question throws
+// 422 OUT_OF_SCOPE; any other failure throws and becomes 503 AI_UNAVAILABLE. Either way the question
+// is given back.
+export class OpenAIExplainer implements ProposalExplainer {
+  constructor(
+    private readonly client: OpenAI,
+    private readonly model: string = DEFAULT_AI_MODEL,
+  ) {}
+
+  async explain(input: ExplanationInput): Promise<AiExplanation> {
+    const call = { client: this.client, model: this.model, version: EXPLAIN_PROMPT_VERSION };
+    const gate = JSON.stringify({ question: input.question, context: { thesis: input.thesis, items: input.items.map((i) => i.symbol) } });
+    const { verdict } = await structured({ ...call, operation: 'explain_scope_check', instructions: EXPLAIN_SCOPE_INSTRUCTIONS, schema: scopeSchema, input: gate, maxOutputTokens: 300 });
+    if (verdict === 'OUT_OF_SCOPE') throw outOfScope('unrelated', 'question');
+    if (verdict === 'NEEDS_CLARIFICATION') throw outOfScope('unclear', 'question');
+    return structured({ ...call, operation: 'explain', instructions: EXPLAIN_INSTRUCTIONS, schema: aiExplanationSchema, input: JSON.stringify(input), maxOutputTokens: 1500 });
   }
 }
 

@@ -8,13 +8,22 @@ import type { AiInterpretation } from './interpreter.js';
 
 export type OutOfScopeReason = 'unrelated' | 'unclear';
 
-const OUT_OF_SCOPE_MESSAGES: Record<OutOfScopeReason, string> = {
-  unrelated: 'We only work with beliefs about the economy. Describe a trend, sector or technology you think will grow.',
-  unclear: "We couldn't find an economic belief in this text. Describe the trend you think will grow and why.",
+// A conviction (interpretation, corrections) or a question about a composition (explanations).
+export type ScopedText = 'conviction' | 'question';
+
+const OUT_OF_SCOPE_MESSAGES: Record<ScopedText, Record<OutOfScopeReason, string>> = {
+  conviction: {
+    unrelated: 'We only work with beliefs about the economy. Describe a trend, sector or technology you think will grow.',
+    unclear: "We couldn't find an economic belief in this text. Describe the trend you think will grow and why.",
+  },
+  question: {
+    unrelated: 'We can only answer questions about this thesis and its assets.',
+    unclear: "We couldn't tell what you'd like to know. Ask about an asset, its weight or what the composition covers.",
+  },
 };
 
-export function outOfScope(reason: OutOfScopeReason): ApiError {
-  return new ApiError(422, 'OUT_OF_SCOPE', OUT_OF_SCOPE_MESSAGES[reason], { reason });
+export function outOfScope(reason: OutOfScopeReason, text: ScopedText = 'conviction'): ApiError {
+  return new ApiError(422, 'OUT_OF_SCOPE', OUT_OF_SCOPE_MESSAGES[text][reason], { reason });
 }
 
 // NFKC folds look-alike characters (fullwidth letters, ligatures) into plain ones; format
