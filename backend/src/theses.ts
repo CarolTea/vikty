@@ -1,4 +1,6 @@
+import type { Catalog } from './catalog/instruments.js';
 import type { InterpretationContent } from './interpretations.js';
+import type { Composition } from './proposals.js';
 
 // Suggested theses: curated ahead of time, so choosing one costs no AI call and no quota (E1 rule 1).
 export interface SuggestedThesis {
@@ -7,6 +9,9 @@ export interface SuggestedThesis {
   summary: string;
   text: string;
   interpretation: InterpretationContent;
+  // Curated composition, used instead of the AI (no quota, `curated: true`). Absent until the
+  // catalog has approved instruments for the thesis: the proposal then says so in its limitations.
+  composition?: Composition;
 }
 
 // Placeholder taken from the examples in Docs/api/openapi.yaml. The real list depends on what the
@@ -34,4 +39,11 @@ export const suggestedTheses: SuggestedThesis[] = [
 
 export function findSuggestedThesis(id: string): SuggestedThesis | undefined {
   return suggestedTheses.find((t) => t.id === id);
+}
+
+// Listed only when the catalog can represent it: a curated composition whose every instrument is
+// approved. Until then the thesis still works by id, but isn't offered (contract, route 02).
+export function representable(thesis: SuggestedThesis, catalog: Catalog): boolean {
+  const items = thesis.composition?.items ?? [];
+  return items.length > 0 && items.every((i) => catalog.find(i.instrumentId)?.status === 'approved');
 }

@@ -14,12 +14,13 @@ export interface DraftItem {
   state: ItemState;
 }
 
-export type AvailabilityState = 'available' | 'no_route' | 'suspended' | 'restricted';
+export type AvailabilityState = 'available' | 'no_route' | 'suspended' | 'restricted' | 'unknown';
 
 export interface Availability {
   buy: AvailabilityState;
   sell: AvailabilityState;
-  checkedAt: string;
+  // Null when nothing was checked (`unknown`).
+  checkedAt: string | null;
 }
 
 export type IssueCode =
@@ -81,7 +82,8 @@ export interface ValidationContext {
   exposures: readonly { id: string; label: string }[];
   // Instruments the interpretation's exclusions rule out, resolved when the proposal was made.
   excludedInstrumentIds: readonly string[];
-  // Buy availability by instrument id, from Jupiter. Missing for an active asset → inconclusive.
+  // Buy availability by instrument id, from Jupiter. Missing or unknown for an active asset →
+  // inconclusive.
   availability: ReadonlyMap<string, Availability>;
   // The registry by default; tests pass their own.
   lookup?: (id: string) => Instrument | undefined;
@@ -165,7 +167,7 @@ export function validateDraft(budgetUsdc: string, items: readonly DraftItem[], c
     }
 
     const availability = ctx.availability.get(id);
-    if (!availability) conclusive = false;
+    if (!availability || availability.buy === 'unknown') conclusive = false;
     else if (availability.buy !== 'available') {
       warning('NO_ROUTE', id, `No buy route for ${name} right now.`, { buy: availability.buy });
     }

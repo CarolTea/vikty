@@ -8,6 +8,8 @@ export const quotaKeys = {
   anonymous: (sessionId: string) => `quota:anon:${sessionId}`,
   // Per-wallet interpretations, one counter per UTC day.
   wallet: (address: string, day: string) => `quota:wallet:${address}:${day}`,
+  // Questions about one proposal ("Ask VicTy"), whoever asks.
+  explanations: (proposalId: string) => `quota:explain:${proposalId}`,
 };
 
 export const ANON_FREE_INTERPRETATIONS = 1;
@@ -15,6 +17,8 @@ export const ANON_FREE_INTERPRETATIONS = 1;
 const ANON_TTL_SECONDS = 60 * 60 * 24; // 24h after first use
 // The day key only matters until midnight UTC; two days covers any clock skew.
 const WALLET_TTL_SECONDS = 60 * 60 * 48;
+// Long enough to outlive any session looking at the proposal.
+const EXPLANATIONS_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export interface QuotaStore {
   anonymousUsed(sessionId: string): Promise<number>;
@@ -25,6 +29,10 @@ export interface QuotaStore {
   releaseAnonymous(sessionId: string): Promise<void>;
   reserveWallet(address: string, day: string): Promise<number>;
   releaseWallet(address: string, day: string): Promise<void>;
+  // Same pattern for questions about a proposal.
+  explanationsUsed(proposalId: string): Promise<number>;
+  reserveExplanation(proposalId: string): Promise<number>;
+  releaseExplanation(proposalId: string): Promise<void>;
 }
 
 // DECR only if the key still exists: after it expires, a release must not leave a -1 behind.
@@ -55,6 +63,18 @@ export class RedisQuotaStore implements QuotaStore {
 
   async releaseWallet(address: string, day: string): Promise<void> {
     await this.redis.eval(RELEASE_SCRIPT, 1, quotaKeys.wallet(address, day));
+  }
+
+  explanationsUsed(proposalId: string): Promise<number> {
+    return this.read(quotaKeys.explanations(proposalId));
+  }
+
+  reserveExplanation(proposalId: string): Promise<number> {
+    return this.reserve(quotaKeys.explanations(proposalId), EXPLANATIONS_TTL_SECONDS);
+  }
+
+  async releaseExplanation(proposalId: string): Promise<void> {
+    await this.redis.eval(RELEASE_SCRIPT, 1, quotaKeys.explanations(proposalId));
   }
 
   private async read(key: string): Promise<number> {

@@ -29,6 +29,73 @@ export const migrations: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '002_proposals',
+    sql: `
+      -- A composition for an interpretation and a budget. Items keep what the AI (or the curation)
+      -- proposed; instrument data (symbol, mint, risks) is read from the registry when serving.
+      CREATE TABLE proposals (
+        id                      text PRIMARY KEY,
+        interpretation_id       text NOT NULL REFERENCES interpretations (id),
+        -- Same owner as the interpretation it came from.
+        session_hash            text NOT NULL,
+        wallet                  text,
+        curated                 boolean NOT NULL,
+        -- Decimal string, as in the contract; never a float.
+        budget_usdc             text NOT NULL,
+        items                   jsonb NOT NULL,
+        -- Snapshot of the interpretation's exposures, for PARTIAL_REPRESENTATION.
+        exposures               jsonb NOT NULL,
+        excluded_instrument_ids jsonb NOT NULL,
+        limitations             jsonb NOT NULL,
+        created_at              timestamptz NOT NULL DEFAULT now()
+      );
+      -- A new budget for the same interpretation reuses its latest composition.
+      CREATE INDEX proposals_interpretation_idx ON proposals (interpretation_id, created_at DESC);
+    `,
+  },
+  {
+    id: '003_interpretation_versions',
+    sql: `
+      -- Each correction (PATCH) bumps the version. A proposal records the version it was composed
+      -- for, so a composition is reused only while the interpretation is unchanged.
+      ALTER TABLE interpretations ADD COLUMN version integer NOT NULL DEFAULT 1;
+      ALTER TABLE proposals ADD COLUMN interpretation_version integer NOT NULL DEFAULT 1;
+    `,
+  },
+  {
+    id: '004_plans',
+    sql: `
+      -- Saved compositions, owned by a wallet (several per wallet, like the demo's saved theses).
+      CREATE TABLE plans (
+        id                           text PRIMARY KEY,
+        wallet                       text NOT NULL,
+        proposal_id                  text NOT NULL REFERENCES proposals (id),
+        interpretation_summary       text NOT NULL,
+        status                       text NOT NULL CHECK (status IN ('draft', 'active')),
+        version                      integer NOT NULL,
+        -- Decimal string, as in the contract; never a float.
+        budget_usdc                  text NOT NULL,
+        items                        jsonb NOT NULL,
+        exposures                    jsonb NOT NULL,
+        excluded_instrument_ids      jsonb NOT NULL,
+        tracked_mints                jsonb NOT NULL,
+        confirm_preexisting_balances boolean NOT NULL,
+        created_at                   timestamptz NOT NULL,
+        updated_at                   timestamptz NOT NULL
+      );
+      CREATE INDEX plans_wallet_idx ON plans (wallet, updated_at DESC);
+
+      -- Every activation or change of tracked mints, kept: the contract asks for it to be recorded.
+      CREATE TABLE plan_scope_changes (
+        id                           bigserial PRIMARY KEY,
+        plan_id                      text NOT NULL REFERENCES plans (id),
+        tracked_mints                jsonb NOT NULL,
+        confirm_preexisting_balances boolean NOT NULL,
+        created_at                   timestamptz NOT NULL
+      );
+    `,
+  },
 ];
 
 // Runs at startup, before the server listens. Each migration and its bookkeeping row go in one
