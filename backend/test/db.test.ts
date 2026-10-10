@@ -20,12 +20,13 @@ const record: InterpretationRecord = {
   representation: 'partial',
   limitations: ['Only part of the theme is covered.'],
   status: 'needs_clarification',
+  version: 1,
 };
 
 describe('migrations', () => {
   it('apply once and are skipped on the next start', async () => {
     const db = await testDb();
-    assert.deepEqual(await migrate(db), ['001_interpretations', '002_proposals']);
+    assert.deepEqual(await migrate(db), ['001_interpretations', '002_proposals', '003_interpretation_versions']);
     assert.deepEqual(await migrate(db), []);
     await db.close();
   });
@@ -70,10 +71,50 @@ describe('PgInterpretationStore', () => {
   });
 });
 
+describe('PgInterpretationStore.update', () => {
+  it('saves a correction on the expected version, once', async () => {
+    const db = await testDb();
+    await migrate(db);
+    const store = new PgInterpretationStore(db);
+    await store.create(record);
+
+    const corrected: InterpretationRecord = {
+      ...record,
+      exposures: [],
+      exclusions: [{ id: 'exc_1', label: 'No fossil fuels' }],
+      ambiguities: [{ ...record.ambiguities[0]!, answer: 'opt_1' }],
+      status: 'ready',
+      version: 2,
+    };
+    assert.equal(await store.update(corrected), true);
+    assert.deepEqual(await store.get(record.id), corrected);
+
+    // A second writer that also started from version 1 loses, and changes nothing.
+    assert.equal(await store.update({ ...corrected, exposures: record.exposures }), false);
+    assert.deepEqual((await store.get(record.id))?.exposures, []);
+    await db.close();
+  });
+
+  it('never changes what the AI interpreted', async () => {
+    const db = await testDb();
+    await migrate(db);
+    const store = new PgInterpretationStore(db);
+    await store.create(record);
+    await store.update({ ...record, summary: 'changed', representation: 'sufficient', limitations: [], version: 2 });
+
+    const saved = await store.get(record.id);
+    assert.equal(saved?.summary, record.summary);
+    assert.equal(saved?.representation, record.representation);
+    assert.deepEqual(saved?.limitations, record.limitations);
+    await db.close();
+  });
+});
+
 describe('PgProposalStore', () => {
   const proposal: ProposalRecord = {
     id: 'prop_1',
     interpretationId: record.id,
+    interpretationVersion: 1,
     sessionHash: record.sessionHash,
     wallet: null,
     curated: false,
@@ -94,8 +135,9 @@ describe('PgProposalStore', () => {
     await store.create({ ...proposal, id: 'prop_2', budgetUsdc: '900' });
     assert.deepEqual(await store.get('prop_1'), proposal);
     assert.equal(await store.get('prop_nope'), null);
-    assert.equal((await store.latestFor(record.id))?.id, 'prop_2');
-    assert.equal(await store.latestFor('int_other'), null);
+    assert.equal((await store.latestFor(record.id, 1))?.id, 'prop_2');
+    assert.equal(await store.latestFor(record.id, 2), null, 'another version');
+    assert.equal(await store.latestFor('int_other', 1), null);
     await db.close();
   });
 

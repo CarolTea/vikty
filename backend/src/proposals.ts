@@ -23,6 +23,8 @@ export interface Composition {
 export interface ProposalRecord extends Composition {
   id: string;
   interpretationId: string;
+  // The interpretation version the composition was made for.
+  interpretationVersion: number;
   sessionHash: string;
   wallet: string | null;
   curated: boolean;
@@ -37,13 +39,15 @@ export function newProposalId(): string {
 export interface ProposalStore {
   create(record: ProposalRecord): Promise<void>;
   get(id: string): Promise<ProposalRecord | null>;
-  // The most recent proposal for an interpretation, to reuse its composition with a new budget.
-  latestFor(interpretationId: string): Promise<ProposalRecord | null>;
+  // The most recent proposal for this version of an interpretation, to reuse its composition with a
+  // new budget.
+  latestFor(interpretationId: string, version: number): Promise<ProposalRecord | null>;
 }
 
 interface ProposalRow {
   id: string;
   interpretation_id: string;
+  interpretation_version: number;
   session_hash: string;
   wallet: string | null;
   curated: boolean;
@@ -61,8 +65,8 @@ export class PgProposalStore implements ProposalStore {
     await this.db.query(
       `INSERT INTO proposals
          (id, interpretation_id, session_hash, wallet, curated, budget_usdc, items, exposures,
-          excluded_instrument_ids, limitations)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          excluded_instrument_ids, limitations, interpretation_version)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         r.id,
         r.interpretationId,
@@ -74,6 +78,7 @@ export class PgProposalStore implements ProposalStore {
         JSON.stringify(r.exposures),
         JSON.stringify(r.excludedInstrumentIds),
         JSON.stringify(r.limitations),
+        r.interpretationVersion,
       ],
     );
   }
@@ -83,10 +88,11 @@ export class PgProposalStore implements ProposalStore {
     return row ? fromRow(row) : null;
   }
 
-  async latestFor(interpretationId: string): Promise<ProposalRecord | null> {
+  async latestFor(interpretationId: string, version: number): Promise<ProposalRecord | null> {
     const [row] = await this.db.query<ProposalRow>(
-      'SELECT * FROM proposals WHERE interpretation_id = $1 ORDER BY created_at DESC LIMIT 1',
-      [interpretationId],
+      `SELECT * FROM proposals WHERE interpretation_id = $1 AND interpretation_version = $2
+        ORDER BY created_at DESC LIMIT 1`,
+      [interpretationId, version],
     );
     return row ? fromRow(row) : null;
   }
@@ -96,6 +102,7 @@ function fromRow(row: ProposalRow): ProposalRecord {
   return {
     id: row.id,
     interpretationId: row.interpretation_id,
+    interpretationVersion: row.interpretation_version,
     sessionHash: row.session_hash,
     wallet: row.wallet,
     curated: row.curated,

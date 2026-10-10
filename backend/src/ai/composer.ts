@@ -19,6 +19,8 @@ export interface CompositionInput {
     exposures: LabeledItem[];
     exclusions: string[];
     restrictions: string[];
+    // The person's answers to the interpretation's questions, as text.
+    answers: { question: string; answer: string }[];
   };
   candidates: CandidateInstrument[];
   policy: { minWeightBps: number; maxWeightBps: number };

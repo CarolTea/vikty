@@ -153,7 +153,7 @@ describe('POST /interpretations with the OpenAI adapter', () => {
 
 describe('OpenAIComposer', () => {
   const input = {
-    thesis: { summary: 'AI infrastructure.', exposures: [{ id: 'exp_1', label: 'AI semiconductors' }], exclusions: [], restrictions: [] },
+    thesis: { summary: 'AI infrastructure.', exposures: [{ id: 'exp_1', label: 'AI semiconductors' }], exclusions: [], restrictions: [], answers: [] },
     candidates: [],
     policy: { minWeightBps: 500, maxWeightBps: 4000 },
   };
@@ -167,7 +167,7 @@ describe('OpenAIComposer', () => {
     assert.equal(request!.text.format.name, 'compose');
     assert.equal(request!.text.format.strict, true);
     assert.equal(request!.store, false);
-    assert.match(request!.instructions, /Prompt version: compose-v1/);
+    assert.match(request!.instructions, /Prompt version: compose-v2/);
     assert.deepEqual(JSON.parse(request!.input), input);
   });
 

@@ -54,6 +54,15 @@ export const migrations: { id: string; sql: string }[] = [
       CREATE INDEX proposals_interpretation_idx ON proposals (interpretation_id, created_at DESC);
     `,
   },
+  {
+    id: '003_interpretation_versions',
+    sql: `
+      -- Each correction (PATCH) bumps the version. A proposal records the version it was composed
+      -- for, so a composition is reused only while the interpretation is unchanged.
+      ALTER TABLE interpretations ADD COLUMN version integer NOT NULL DEFAULT 1;
+      ALTER TABLE proposals ADD COLUMN interpretation_version integer NOT NULL DEFAULT 1;
+    `,
+  },
 ];
 
 // Runs at startup, before the server listens. Each migration and its bookkeeping row go in one

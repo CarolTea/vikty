@@ -113,6 +113,13 @@ export class MemoryInterpretationStore implements InterpretationStore {
   async get(id: string) {
     return this.records.find((r) => r.id === id) ?? null;
   }
+
+  async update(record: InterpretationRecord) {
+    const i = this.records.findIndex((r) => r.id === record.id && r.version === record.version - 1);
+    if (i === -1) return false;
+    this.records[i] = record;
+    return true;
+  }
 }
 
 // Registry entries approved for tests (the real registry approves only USDC so far), plus one that
@@ -173,8 +180,8 @@ export class MemoryProposalStore implements ProposalStore {
     return this.records.find((r) => r.id === id) ?? null;
   }
 
-  async latestFor(interpretationId: string) {
-    return this.records.findLast((r) => r.interpretationId === interpretationId) ?? null;
+  async latestFor(interpretationId: string, version: number) {
+    return this.records.findLast((r) => r.interpretationId === interpretationId && r.interpretationVersion === version) ?? null;
   }
 }
 

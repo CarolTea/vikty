@@ -38,6 +38,7 @@ async function setup(overrides: Parameters<typeof testDeps>[0] = {}) {
       representation: 'sufficient',
       limitations: [],
       status: 'ready',
+      version: 1,
       ...patch,
     };
     deps.interpretations.records.push(record);

@@ -210,7 +210,7 @@ export const proposalRoutes: FastifyPluginAsync = async (app) => {
 
   // At most one AI call per interpretation: a new budget reuses the latest composition.
   async function compositionFor(interpretation: InterpretationRecord, log: FastifyBaseLogger): Promise<Composition> {
-    const previous = await proposals.latestFor(interpretation.id);
+    const previous = await proposals.latestFor(interpretation.id, interpretation.version);
     if (previous) {
       return {
         items: previous.items,
@@ -233,6 +233,7 @@ export const proposalRoutes: FastifyPluginAsync = async (app) => {
         exposures: interpretation.exposures,
         exclusions: interpretation.exclusions.map((e) => e.label),
         restrictions: interpretation.restrictions.map((r) => r.label),
+        answers: answeredQuestions(interpretation),
       },
       candidates: candidates.map(candidateOf),
       policy: policyLimits(policy),
@@ -283,6 +284,7 @@ export const proposalRoutes: FastifyPluginAsync = async (app) => {
       const record: ProposalRecord = {
         id: newProposalId(),
         interpretationId: interpretation.id,
+        interpretationVersion: interpretation.version,
         ...owner,
         curated: interpretation.source === 'suggested',
         budgetUsdc: request.body.budgetUsdc,
@@ -332,3 +334,11 @@ export const proposalRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 };
+
+// Answered questions as question and chosen option, the way the person saw them.
+function answeredQuestions(interpretation: InterpretationRecord): CompositionInput['thesis']['answers'] {
+  return interpretation.ambiguities.flatMap((a) => {
+    const option = a.options.find((o) => o.id === a.answer);
+    return option ? [{ question: a.question, answer: option.label }] : [];
+  });
+}
