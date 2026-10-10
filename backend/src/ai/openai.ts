@@ -22,8 +22,8 @@ const scopeSchema = z.strictObject({
   verdict: z.enum(['IN_SCOPE', 'OUT_OF_SCOPE', 'NEEDS_CLARIFICATION']),
 });
 
-export function openAIClient(apiKey: string): OpenAI {
-  return new OpenAI({ apiKey, timeout: 20_000, maxRetries: 1 });
+export function openAIClient(apiKey: string, timeoutMs = 20_000): OpenAI {
+  return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries: 1 });
 }
 
 // Two calls per conviction: a scope gate that only classifies, then the interpretation. Keeping the

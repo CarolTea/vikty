@@ -22,6 +22,8 @@ const schema = z
     // OpenAI. Without a key, free-text interpretations answer 503 AI_UNAVAILABLE.
     AI_API_KEY: secret,
     AI_MODEL: z.string().min(1).default(DEFAULT_AI_MODEL),
+    // Per call, with one retry. Slower models (free ones on OpenRouter) need more.
+    AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(20_000),
 
     DATABASE_URL: z.string().url(),
     REDIS_URL: z.string().url(),

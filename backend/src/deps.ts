@@ -55,7 +55,7 @@ export function createDeps(config: Config): Deps & { db: Db } {
   });
 
   const db = pgDb(config.DATABASE_URL);
-  const openai = config.AI_API_KEY ? openAIClient(config.AI_API_KEY) : null;
+  const openai = config.AI_API_KEY ? openAIClient(config.AI_API_KEY, config.AI_TIMEOUT_MS) : null;
 
   return {
     config,
