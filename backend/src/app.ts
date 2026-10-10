@@ -8,6 +8,7 @@ import { healthRoutes } from './routes/health.js';
 import { explanationRoutes } from './routes/explanations.js';
 import { instrumentRoutes } from './routes/instruments.js';
 import { interpretationRoutes } from './routes/interpretations.js';
+import { planRoutes } from './routes/plans.js';
 import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/session.js';
 import { thesisRoutes } from './routes/theses.js';
@@ -89,6 +90,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
       await api.register(proposalRoutes);
       await api.register(explanationRoutes);
       await api.register(instrumentRoutes);
+      await api.register(planRoutes);
     },
     { prefix: '/api/v1' },
   );
