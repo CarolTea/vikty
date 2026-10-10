@@ -114,3 +114,25 @@ export function riskLabels(i: Instrument): string[] {
     return text.charAt(0).toUpperCase() + text.slice(1);
   });
 }
+
+const DEV_DETAIL: InstrumentDetailContent = {
+  issuerNature: 'Development data: this instrument has not been reviewed.',
+  economicRights: ['Not reviewed yet.'],
+  limitations: ['Approved only for local testing. Its mint is fake and it cannot be traded.'],
+  costs: ['Not reviewed yet.'],
+  howToTrade: 'Not tradable: local testing only.',
+  eligibilityNotes: ['Not reviewed yet.'],
+};
+
+// DEV_APPROVE_DEMO_INSTRUMENTS: the whole registry approved, with fake mints ("dev-…") and
+// placeholder detail where nothing was reviewed. Real approvals (USDC) keep their data.
+export function devCatalog(): Catalog {
+  const instruments = registry.map(
+    (i): Instrument =>
+      i.status === 'approved'
+        ? i
+        : { ...i, status: 'approved', mint: i.mint ?? `dev-${i.id}`, decimals: i.decimals ?? 6, detail: i.detail ?? DEV_DETAIL },
+  );
+  const byDevId = new Map(instruments.map((i) => [i.id, i]));
+  return { approved: () => instruments, find: (id) => byDevId.get(id) };
+}

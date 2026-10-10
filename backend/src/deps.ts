@@ -6,7 +6,7 @@ import { noInterpreterYet, type ConvictionInterpreter } from './ai/interpreter.j
 import { OpenAIComposer, OpenAIExplainer, OpenAIInterpreter, openAIClient } from './ai/openai.js';
 import { PrivyWalletResolver, type WalletResolver } from './auth/privy.js';
 import { noAvailabilityYet, type AvailabilityLookup } from './availability.js';
-import { registryCatalog, type Catalog } from './catalog/instruments.js';
+import { devCatalog, registryCatalog, type Catalog } from './catalog/instruments.js';
 import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile.js';
 import type { Config } from './config.js';
 import { pgDb, type Db } from './db/index.js';
@@ -69,7 +69,7 @@ export function createDeps(config: Config): Deps & { db: Db } {
     composer: openai ? new OpenAIComposer(openai, config.AI_MODEL) : noComposerYet,
     explainer: openai ? new OpenAIExplainer(openai, config.AI_MODEL) : noExplainerYet,
     proposals: new PgProposalStore(db),
-    catalog: registryCatalog,
+    catalog: config.DEV_APPROVE_DEMO_INSTRUMENTS ? devCatalog() : registryCatalog,
     // No Jupiter adapter yet: every instrument is `unknown` and validations are inconclusive.
     availability: noAvailabilityYet,
     db,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { approvedInstruments, findInstrument, instrumentSummary } from '../src/catalog/instruments.js';
+import { approvedInstruments, devCatalog, findInstrument, instrumentSummary } from '../src/catalog/instruments.js';
+import { testConfig } from './helpers.js';
 import { registry } from '../src/catalog/registry.js';
 
 const BASE58_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -66,5 +67,25 @@ describe('Asset Registry', () => {
 
   it('refuses a summary for an instrument without a confirmed mint', () => {
     assert.throws(() => instrumentSummary(findInstrument('ins_ondo_nvda')!), /no confirmed mint/);
+  });
+});
+
+describe('devCatalog (DEV_APPROVE_DEMO_INSTRUMENTS)', () => {
+  it('approves every instrument with a fake mint and placeholder detail, keeping real approvals', () => {
+    const dev = devCatalog();
+    assert.equal(dev.approved().length, registry.length);
+    const nvda = dev.find('ins_ondo_nvda')!;
+    assert.equal(nvda.status, 'approved');
+    assert.equal(nvda.mint, 'dev-ins_ondo_nvda');
+    assert.match(nvda.detail!.limitations[0]!, /local testing/);
+    assert.deepEqual(dev.find('ins_usdc'), findInstrument('ins_usdc'));
+    // The real registry is untouched.
+    assert.equal(findInstrument('ins_ondo_nvda')!.status, 'unavailable');
+  });
+
+  it('is off by default and refused in production', () => {
+    assert.equal(testConfig().DEV_APPROVE_DEMO_INSTRUMENTS, false);
+    assert.equal(testConfig({ DEV_APPROVE_DEMO_INSTRUMENTS: 'true' }).DEV_APPROVE_DEMO_INSTRUMENTS, true);
+    assert.throws(() => testConfig({ NODE_ENV: 'production', DEV_APPROVE_DEMO_INSTRUMENTS: 'true' }), /DEV_APPROVE_DEMO_INSTRUMENTS: never in production/);
   });
 });
