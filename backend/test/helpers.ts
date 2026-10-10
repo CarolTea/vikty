@@ -12,7 +12,7 @@ import type { Db } from '../src/db/index.js';
 import type { Deps } from '../src/deps.js';
 import { ApiError } from '../src/errors.js';
 import type { InterpretationRecord, InterpretationStore } from '../src/interpretations.js';
-import { noPlansYet } from '../src/plans.js';
+import type { PlanRecord, PlanStore } from '../src/plans.js';
 import type { ProposalRecord, ProposalStore } from '../src/proposals.js';
 import type { QuotaStore } from '../src/quota.js';
 
@@ -217,6 +217,39 @@ export class FakeExplainer implements ProposalExplainer {
   }
 }
 
+export class MemoryPlanStore implements PlanStore {
+  readonly records: PlanRecord[] = [];
+  readonly scopeChanges: { planId: string; trackedMints: string[] }[] = [];
+
+  async create(record: PlanRecord) {
+    this.records.push(record);
+  }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async listByWallet(wallet: string) {
+    return this.records.filter((r) => r.wallet === wallet).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  async update(record: PlanRecord, expectedVersion: number, scopeChanged: boolean) {
+    const i = this.records.findIndex((r) => r.id === record.id && r.version === expectedVersion);
+    if (i === -1) return false;
+    this.records[i] = record;
+    if (scopeChanged) this.scopeChanges.push({ planId: record.id, trackedMints: record.trackedMints });
+    return true;
+  }
+
+  async activePlanId(wallet: string) {
+    return (await this.listByWallet(wallet)).find((r) => r.status === 'active')?.id ?? null;
+  }
+
+  async activeOperationIds() {
+    return [];
+  }
+}
+
 // Every instrument buyable unless set otherwise.
 export class FakeAvailability implements AvailabilityLookup {
   readonly states = new Map<string, Availability>();
@@ -248,6 +281,7 @@ type TestDeps = Deps & {
   interpretations: MemoryInterpretationStore;
   composer: FakeComposer;
   explainer: FakeExplainer;
+  plans: MemoryPlanStore;
   proposals: MemoryProposalStore;
   catalog: FakeCatalog;
   availability: FakeAvailability;
@@ -263,7 +297,7 @@ export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
         throw new ApiError(401, 'UNAUTHENTICATED', 'Your session has expired. Connect your wallet again.');
       },
     },
-    plans: noPlansYet,
+    plans: new MemoryPlanStore(),
     botCheck: new FakeBotCheck(),
     interpreter: new FakeInterpreter(),
     interpretations: new MemoryInterpretationStore(),

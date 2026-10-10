@@ -63,6 +63,39 @@ export const migrations: { id: string; sql: string }[] = [
       ALTER TABLE proposals ADD COLUMN interpretation_version integer NOT NULL DEFAULT 1;
     `,
   },
+  {
+    id: '004_plans',
+    sql: `
+      -- Saved compositions, owned by a wallet (several per wallet, like the demo's saved theses).
+      CREATE TABLE plans (
+        id                           text PRIMARY KEY,
+        wallet                       text NOT NULL,
+        proposal_id                  text NOT NULL REFERENCES proposals (id),
+        interpretation_summary       text NOT NULL,
+        status                       text NOT NULL CHECK (status IN ('draft', 'active')),
+        version                      integer NOT NULL,
+        -- Decimal string, as in the contract; never a float.
+        budget_usdc                  text NOT NULL,
+        items                        jsonb NOT NULL,
+        exposures                    jsonb NOT NULL,
+        excluded_instrument_ids      jsonb NOT NULL,
+        tracked_mints                jsonb NOT NULL,
+        confirm_preexisting_balances boolean NOT NULL,
+        created_at                   timestamptz NOT NULL,
+        updated_at                   timestamptz NOT NULL
+      );
+      CREATE INDEX plans_wallet_idx ON plans (wallet, updated_at DESC);
+
+      -- Every activation or change of tracked mints, kept: the contract asks for it to be recorded.
+      CREATE TABLE plan_scope_changes (
+        id                           bigserial PRIMARY KEY,
+        plan_id                      text NOT NULL REFERENCES plans (id),
+        tracked_mints                jsonb NOT NULL,
+        confirm_preexisting_balances boolean NOT NULL,
+        created_at                   timestamptz NOT NULL
+      );
+    `,
+  },
 ];
 
 // Runs at startup, before the server listens. Each migration and its bookkeeping row go in one

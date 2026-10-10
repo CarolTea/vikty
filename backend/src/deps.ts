@@ -11,7 +11,7 @@ import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile
 import type { Config } from './config.js';
 import { pgDb, type Db } from './db/index.js';
 import { PgInterpretationStore, type InterpretationStore } from './interpretations.js';
-import { noPlansYet, type PlanLookup } from './plans.js';
+import { PgPlanStore, type PlanStore } from './plans.js';
 import { PgProposalStore, type ProposalStore } from './proposals.js';
 import { RedisQuotaStore, type QuotaStore } from './quota.js';
 
@@ -20,7 +20,7 @@ export interface Deps {
   config: Config;
   quota: QuotaStore;
   wallets: WalletResolver;
-  plans: PlanLookup;
+  plans: PlanStore;
   botCheck: BotCheck;
   interpreter: ConvictionInterpreter;
   interpretations: InterpretationStore;
@@ -61,7 +61,7 @@ export function createDeps(config: Config): Deps & { db: Db } {
     config,
     quota: new RedisQuotaStore(redis),
     wallets: new PrivyWalletResolver(privy, redis),
-    plans: noPlansYet,
+    plans: new PgPlanStore(db),
     botCheck: config.TURNSTILE_SECRET_KEY ? new TurnstileBotCheck(config.TURNSTILE_SECRET_KEY) : skipBotCheck,
     // Without a key (allowed outside production), free-text interpretations answer 503 AI_UNAVAILABLE.
     interpreter: openai ? new OpenAIInterpreter(openai, config.AI_MODEL) : noInterpreterYet,

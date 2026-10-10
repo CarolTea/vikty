@@ -26,7 +26,7 @@ const record: InterpretationRecord = {
 describe('migrations', () => {
   it('apply once and are skipped on the next start', async () => {
     const db = await testDb();
-    assert.deepEqual(await migrate(db), ['001_interpretations', '002_proposals', '003_interpretation_versions']);
+    assert.deepEqual(await migrate(db), ['001_interpretations', '002_proposals', '003_interpretation_versions', '004_plans']);
     assert.deepEqual(await migrate(db), []);
     await db.close();
   });
