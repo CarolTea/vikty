@@ -142,7 +142,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
   // - `free_text` without a wallet: Turnstile, then the one free interpretation.
   // - `free_text` with a wallet: the wallet's daily quota.
   // The quota is reserved before calling the AI and given back if anything fails after that
-  // (E1 rule 9: a failure keeps the draft and lets the person try again).
+  // (a failure keeps the draft and lets the person try again).
   app.post<{ Body: Body }>(
     '/interpretations',
     { schema: { body: bodySchema, response: { 201: interpretationSchema } } },
