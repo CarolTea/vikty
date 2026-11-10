@@ -22,6 +22,17 @@ export interface Evidence {
   reviewedAt: string;
 }
 
+// What the instrument detail screen explains (contract InstrumentDetail). Written by whoever reviews
+// the instrument; required before it is approved.
+export interface InstrumentDetailContent {
+  issuerNature: string;
+  economicRights: readonly string[];
+  limitations: readonly string[];
+  costs: readonly string[];
+  howToTrade: string;
+  eligibilityNotes: readonly string[];
+}
+
 export interface Instrument {
   id: string;
   symbol: string;
@@ -47,6 +58,7 @@ export interface Instrument {
   // Where the curation started; not evidence until someone reviews it.
   sourceUrl: string;
   evidence: readonly Evidence[];
+  detail?: InstrumentDetailContent;
 }
 
 // The contract's InstrumentSummary. Only call it for an approved instrument (mint and decimals set).
@@ -85,4 +97,42 @@ export function instrumentSummary(i: Instrument): InstrumentSummary {
     exposureLabel: i.exposureLabel,
     issuerName: i.issuerName,
   };
+}
+
+// What routes use to reach the registry. Tests pass their own approved instruments.
+export interface Catalog {
+  approved(): Instrument[];
+  find(id: string): Instrument | undefined;
+}
+
+export const registryCatalog: Catalog = { approved: approvedInstruments, find: findInstrument };
+
+// Registry risk tags as text for the screen: 'market-risk' → 'Market risk'.
+export function riskLabels(i: Instrument): string[] {
+  return i.riskTags.map((tag) => {
+    const text = tag.replaceAll('-', ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  });
+}
+
+const DEV_DETAIL: InstrumentDetailContent = {
+  issuerNature: 'Development data: this instrument has not been reviewed.',
+  economicRights: ['Not reviewed yet.'],
+  limitations: ['Approved only for local testing. Its mint is fake and it cannot be traded.'],
+  costs: ['Not reviewed yet.'],
+  howToTrade: 'Not tradable: local testing only.',
+  eligibilityNotes: ['Not reviewed yet.'],
+};
+
+// DEV_APPROVE_DEMO_INSTRUMENTS: the whole registry approved, with fake mints ("dev-…") and
+// placeholder detail where nothing was reviewed. Real approvals (USDC) keep their data.
+export function devCatalog(): Catalog {
+  const instruments = registry.map(
+    (i): Instrument =>
+      i.status === 'approved'
+        ? i
+        : { ...i, status: 'approved', mint: i.mint ?? `dev-${i.id}`, decimals: i.decimals ?? 6, detail: i.detail ?? DEV_DETAIL },
+  );
+  const byDevId = new Map(instruments.map((i) => [i.id, i]));
+  return { approved: () => instruments, find: (id) => byDevId.get(id) };
 }

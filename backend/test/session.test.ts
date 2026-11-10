@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import type { LightMyRequestResponse } from 'fastify';
 import { pickSolanaWallet } from '../src/auth/privy.js';
 import { quotaWindow } from '../src/quota.js';
-import { SESSION_COOKIE } from '../src/auth/session.js';
+import { canAccess, SESSION_COOKIE } from '../src/auth/session.js';
 import { testConfig, testDeps, VALID_TOKEN, WALLET } from './helpers.js';
 import { buildApp } from '../src/app.js';
 
@@ -149,5 +149,26 @@ describe('quotaWindow', () => {
       day: '2026-09-24',
       resetsAt: '2026-09-25T00:00:00Z',
     });
+  });
+});
+
+describe('canAccess', () => {
+  const A = 'a'.repeat(64);
+  const B = 'b'.repeat(64);
+
+  it('lets the same session in, signed in or not', () => {
+    assert.equal(canAccess({ sessionHash: A, wallet: null }, { sessionHash: A, wallet: null }), true);
+    assert.equal(canAccess({ sessionHash: A, wallet: null }, { sessionHash: A, wallet: WALLET }), true);
+    assert.equal(canAccess({ sessionHash: A, wallet: WALLET }, { sessionHash: A, wallet: null }), true);
+  });
+
+  it('lets the owning wallet in from any session', () => {
+    assert.equal(canAccess({ sessionHash: A, wallet: WALLET }, { sessionHash: B, wallet: WALLET }), true);
+  });
+
+  it('keeps everyone else out, including another wallet on the same session', () => {
+    assert.equal(canAccess({ sessionHash: A, wallet: null }, { sessionHash: B, wallet: null }), false);
+    assert.equal(canAccess({ sessionHash: A, wallet: null }, { sessionHash: B, wallet: WALLET }), false);
+    assert.equal(canAccess({ sessionHash: A, wallet: 'other' }, { sessionHash: A, wallet: WALLET }), false);
   });
 });

@@ -601,6 +601,20 @@ export const registry: readonly Instrument[] = [
     riskTags: ['issuer-risk', 'depeg-risk', 'regulatory-risk'],
     sourceUrl: 'https://www.circle.com/multi-chain-usdc/solana',
     evidence: [{ label: 'Circle: USDC contract addresses', url: 'https://developers.circle.com/stablecoins/usdc-contract-addresses', reviewedAt: '2026-10-09' }],
+    detail: {
+      issuerNature: 'Stablecoin issuer that holds reserves in cash and short-term US government obligations.',
+      economicRights: [
+        'Redeemable 1:1 for US dollars through Circle, for verified Circle customers.',
+        'No interest, yield or ownership in Circle.',
+      ],
+      limitations: [
+        'Not a bank deposit and not covered by deposit insurance.',
+        'Holders without a Circle account rely on markets to convert it, where the price can drift from 1 USD.',
+      ],
+      costs: ['Solana network fees on each transaction.', 'Swap fees and price impact when converting through Jupiter.'],
+      howToTrade: 'Swapped on Solana through Jupiter, one operation at a time, signed in your wallet.',
+      eligibilityNotes: ['Anyone can hold and transfer it on Solana; redeeming directly with Circle requires a verified account.'],
+    },
   },
   {
     id: 'ins_pyusd',

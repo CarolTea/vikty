@@ -38,7 +38,7 @@ info:
 
     | # | Método e rota | Pra quê | Auth | Interfaces |
     |---|---|---|---|---|
-    | 01 | `GET /session` | Estado da sessão: quota, wallet autenticada, plano ativo, limites | — | todas (ao abrir o app) |
+    | 01 | `GET /session` | Estado da sessão: quota, wallet autenticada, plano ativo mais recente, limites | — | todas (ao abrir o app) |
     | 02 | `GET /theses/suggested` | Teses sugeridas (curadas) | — | 1 |
     | 03 | `POST /interpretations` | Interpretar uma convicção (texto livre ou tese sugerida) | — | 1 |
     | 04 | `GET /interpretations/{id}` | Ler uma interpretação (recuperar a tela após recarregar) | — | 2 |
@@ -46,10 +46,11 @@ info:
     | 06 | `POST /proposals` | Gerar a composição a partir da interpretação confirmada | — | 2 |
     | 07 | `GET /proposals/{id}` | Ler uma proposta (recuperar a tela após recarregar) | — | 3 |
     | 08 | `POST /proposals/{id}/validations` | Validar pesos, rejeições e orçamento editados | — | 3 |
+    | 08b | `POST /proposals/{id}/explanations` | Perguntar sobre a composição ("Why is this here?"), só explicação | — | 3 |
     | 09 | `GET /instruments/{id}` | Detalhe de um instrumento aprovado | — | 3, 4 |
     | 10 | `GET /wallet/balances` | Saldos da wallet autenticada | W | 7, 8 |
     | 11 | `POST /plans` | Salvar o rascunho como plano da wallet | W | 5/6 → 7 |
-    | 12 | `GET /plans/current` | Plano da wallet | W | 7, 11 |
+    | 12 | `GET /plans` · `GET /plans/{id}` | Planos da wallet (lista) e um plano | W | 7, 11 |
     | 13 | `PUT /plans/{id}` | Alterar pesos, rejeições e orçamento (gera nova versão) | W | 11 |
     | 14 | `PATCH /plans/{id}` | Ativar o plano e definir o escopo dos saldos acompanhados | W | 7 |
     | 15 | `POST /operations` | Preparar uma compra ou venda (cotação e transação pra revisão) | W | 8, 10 |
@@ -58,8 +59,8 @@ info:
     | 18 | `POST /operations/{id}/submissions` | Enviar a transação assinada | W | 8, 10 → 9 |
     | 19 | `GET /operations/{id}` | Estado de uma operação | W | 9 |
     | 20 | `GET /operations?active=true` | Operações em andamento (recuperar após recarregar) | W | 9 (ao abrir o app) |
-    | 21 | `GET /plans/current/position` | Posição: planejado vs atual, avaliação, limitações | W | 11 |
-    | 22 | `POST /plans/current/reconciliations` | Pedir reconciliação com a blockchain | W | 11 |
+    | 21 | `GET /plans/{id}/position` | Posição: planejado vs atual, avaliação, limitações | W | 11 |
+    | 22 | `POST /plans/{id}/reconciliations` | Pedir reconciliação com a blockchain | W | 11 |
     | 23 | `GET /activity` | Histórico de operações e movimentos externos | W | 12 |
     | 24 | `POST /events` | Eventos de analytics do front, sem texto livre | — | todas |
 
@@ -98,6 +99,7 @@ info:
     | 401 | `UNAUTHENTICATED` | Rota autenticada sem token do Privy válido; em `GET /session` e `POST /interpretations`, token enviado mas inválido ou expirado |
     | 403 | `ANON_QUOTA_USED` | Interpretação gratuita já usada → front oferece conectar a wallet |
     | 403 | `WALLET_QUOTA_USED` | Quota da wallet esgotada; `details.resetsAt` |
+    | 403 | `EXPLANATIONS_USED` | Limite de perguntas da proposta atingido; `details.limit` |
     | 403 | `BOT_CHECK_FAILED` | Turnstile ausente ou inválido; `details.interactive: true` pede o desafio visível |
     | 403 | `WALLET_MISMATCH` | Operação preparada pra outra wallet |
     | 404 | `NOT_FOUND` | Recurso inexistente ou de outra wallet |
@@ -105,8 +107,9 @@ info:
     | 409 | `OPERATION_IN_PROGRESS` | Já existe operação ativa pro item; `details.operationId` |
     | 409 | `QUOTE_EXPIRED` | Cotação vencida; pedir nova |
     | 409 | `MATERIAL_CHANGE` | A nova cotação mudou de forma relevante; exige nova revisão |
-    | 409 | `ACTIVE_PLAN_EXISTS` | Já existe plano ativo; `details.activePlanId` |
     | 422 | `OUT_OF_SCOPE` | O texto não é uma convicção econômica; `details.reason`: `unrelated` (outro assunto ou tentativa de mudar as regras) ou `unclear` (sem contexto pra achar uma convicção). A quota é devolvida |
+    | 422 | `INTERPRETATION_CURATED` | `PATCH /interpretations/{id}` com correção estrutural numa tese sugerida; `details.fields` |
+    | 422 | `INTERPRETATION_NOT_READY` | `POST /proposals` com interpretação que ainda tem ambiguidade material sem resposta |
     | 422 | `PLAN_INVALID` | Validador reprovou; `details.validation` |
     | 422 | `INSTRUMENT_NOT_APPROVED` / `INSTRUMENT_RESTRICTED` / `INSTRUMENT_SUSPENDED` | Instrumento não pode ser operado |
     | 422 | `NO_ROUTE` | Sem rota agora pra essa direção e quantidade |
@@ -120,7 +123,8 @@ info:
 
     1. **Editar uma tese sugerida consome a quota?** O contrato assume que editar vira `free_text` e
        consome a interpretação.
-    2. **Plano ativo existente ao salvar um novo:** hoje `POST /plans` devolve `409 ACTIVE_PLAN_EXISTS`.
+    2. **Vários planos ativos com o mesmo mint** (USDC, por exemplo): como dividir o saldo entre eles na
+       posição. A wallet pode ter vários planos (como as teses salvas da demo); a regra entra com a rota 21.
     3. **Campos da Jupiter** em `Operation.review` e `Operation.result`: confirmados quando a integração for validada.
     4. **Polling ou push** pro estado da operação: polling no MVP; push só se não bastar.
     5. **Limites numéricos** (caracteres, peso máximo por ativo, quota por wallet): os valores daqui são
@@ -133,7 +137,7 @@ servers:
 tags:
   - name: Ao abrir o app
     description: |
-      1. `GET /session` → decide a tela inicial: plano ativo → Interface 11; senão → Interface 1.
+      1. `GET /session` → decide a tela inicial: com plano ativo → Interface 11; senão → Interface 1.
       2. `GET /operations?active=true` (se houver wallet) → retoma a operação em andamento na Interface 9.
   - name: Interface 1 — Descoberta
     description: |
@@ -154,6 +158,7 @@ tags:
       Recebe o resultado de `POST /proposals` (ao recarregar: `GET /proposals/{id}`).
       - `POST /proposals/{id}/validations` → a cada edição de peso, rejeição ou orçamento (com debounce).
       - `GET /instruments/{id}` → "Instrument details" (Interface 4).
+      - `POST /proposals/{id}/explanations` → "Ask VicTy" sobre a composição ou um ativo.
       - "Invest" num ativo sem wallet → Interfaces 5 e 6 (Privy) → Interface 7.
       - "Invest" com plano ativo → Interface 8.
   - name: Interface 4 — Detalhe do instrumento
@@ -166,7 +171,7 @@ tags:
   - name: Interface 7 — Ativar plano
     description: |
       1. `GET /wallet/balances` → saldos, saldos preexistentes, reserva de SOL.
-      2. `GET /plans/current` → o rascunho salvo.
+      2. `GET /plans/{id}` → o rascunho salvo (o `id` vem de `POST /plans`).
       3. `PATCH /plans/{id}` com `status: "active"` → confirmar os mints acompanhados e ativar.
   - name: Interface 8 — Revisão da compra
     description: |
@@ -185,9 +190,9 @@ tags:
       assinatura → `submissions` → Interface 9.
   - name: Interface 11 — Acompanhamento
     description: |
-      - `GET /plans/current` → o plano.
-      - `GET /plans/current/position` → posição, planejado vs atual, limitações.
-      - `POST /plans/current/reconciliations` → "Refresh data"; depois `position` de novo.
+      - `GET /plans` → os planos da wallet; `GET /plans/{id}` → um plano.
+      - `GET /plans/{id}/position` → posição, planejado vs atual, limitações.
+      - `POST /plans/{id}/reconciliations` → "Refresh data"; depois `position` de novo.
       - `PUT /plans/{id}` → editar pesos, rejeições ou orçamento do plano ativo.
       - "Buy" num item pendente → Interface 8 · "Sell" → Interface 10.
   - name: Interface 12 — Atividade
@@ -262,7 +267,9 @@ paths:
     get:
       operationId: listSuggestedTheses
       summary: 02 · Teses sugeridas
-      description: 2–3 teses curadas, só as que o catálogo consegue representar. Não consome quota de IA.
+      description: |
+        2–3 teses curadas, só as que o catálogo consegue representar (todos os instrumentos da
+        composição curada aprovados). Pode vir vazia. Não consome quota de IA.
       tags: [Interface 1 — Descoberta]
       security:
         - anonymousSession: []
@@ -406,6 +413,13 @@ paths:
       description: |
         Correções e respostas **estruturadas**: não chamam a IA e não consomem quota. `status` vira
         `ready` quando não há ambiguidade material aberta.
+        - Id que não existe na interpretação (ambiguidade, opção, exposição, exclusão, restrição) →
+          `400 VALIDATION_ERROR` com `details.fields`.
+        - Texto adicionado é normalizado como a convicção; vazio ou acima de 10 itens por lista → `400`;
+          instrução pra IA → `422 OUT_OF_SCOPE`.
+        - Interpretação curada (tese sugerida) aceita só `answers`; qualquer correção estrutural →
+          `422 INTERPRETATION_CURATED`. O front oferece escrever uma versão própria (`free_text`).
+        - Uma correção invalida a composição já gerada: a próxima `POST /proposals` monta outra.
       tags: [Interface 2 — Interpretação]
       security:
         - anonymousSession: []
@@ -430,12 +444,35 @@ paths:
               schema: { $ref: '#/components/schemas/Interpretation' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: '`INTERPRETATION_CURATED` · `OUT_OF_SCOPE`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error:
+                  code: INTERPRETATION_CURATED
+                  message: Suggested theses can't be edited. Describe your own version to change it.
+                  details: { fields: [removeExposureIds] }
 
   /proposals:
     post:
       operationId: createProposal
       summary: 06 · Gerar a composição
-      description: Exige interpretação com `status` = `ready`. Não consome quota adicional.
+      description: |
+        Exige interpretação com `status` = `ready`; senão `422 INTERPRETATION_NOT_READY`. Não consome
+        quota adicional.
+        - A IA escolhe só entre instrumentos `approved` do registry e é chamada **no máximo uma vez por
+          interpretação**: outra proposta pra mesma interpretação (outro orçamento) reaproveita a
+          composição, sem nova chamada, enquanto a interpretação não mudar (`PATCH`). As respostas
+          às ambiguidades entram no pedido à IA.
+        - Tese sugerida → composição curada, sem IA (`curated: true`).
+        - Interpretação `insufficient`, ou catálogo sem instrumento aprovado que a represente → `201`
+          com `items` vazio e `limitations` explicando. Não é erro.
+        - A resposta da IA passa pelas mesmas verificações da interpretação (schema, conteúdo proibido)
+          e por regras determinísticas: instrumento aprovado e oferecido, exposições da interpretação,
+          pesos dentro da política, exclusões respeitadas. Reprovada → `503 AI_UNAVAILABLE`.
+        - Orçamento fora dos limites não impede criar a proposta: a `validation` traz `BUDGET_INVALID`.
       tags: [Interface 2 — Interpretação]
       security:
         - anonymousSession: []
@@ -463,7 +500,16 @@ paths:
               schema: { $ref: '#/components/schemas/Proposal' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/Unprocessable' }
+        '422':
+          description: '`INTERPRETATION_NOT_READY`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example:
+                error:
+                  code: INTERPRETATION_NOT_READY
+                  message: Answer the open questions about your thesis to see a composition.
+                  details: { ambiguityIds: [amb_1] }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
@@ -494,6 +540,9 @@ paths:
         Validação determinística. Funciona sem wallet. **Não redistribui pesos**: só diz o que está
         válido ou não; quem ajusta é o usuário. Instrumento fora da proposta de origem → issue
         `INCOMPATIBLE_SUBSTITUTION`. O resultado não é guardado, por isso responde `200` (não `201`).
+        - `items` é o rascunho completo: item da proposta que não vier é tratado como rejeitado.
+        - O mesmo `instrumentId` duas vezes → `400 VALIDATION_ERROR`.
+        - A resposta traz os itens da proposta com as edições aplicadas; instrumento de fora não vira item.
       tags: [Interface 3 — Composição]
       security:
         - anonymousSession: []
@@ -527,6 +576,53 @@ paths:
                     items: { $ref: '#/components/schemas/ProposalItem' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
+
+  /proposals/{id}/explanations:
+    post:
+      operationId: createExplanation
+      summary: 08b · Perguntar sobre a composição
+      description: |
+        "Ask VicTy": pergunta em texto livre sobre a composição ou um ativo dela (`instrumentId`). A IA
+        **só explica**: nunca muda pesos, não recomenda nem promete retorno. O resultado não é guardado
+        (`200`).
+        - Até 5 perguntas por proposta (`EXPLANATIONS_USED` depois); não consome a quota de interpretação.
+          Falha da IA devolve a pergunta.
+        - Sem wallet, exige `botCheckToken` (Turnstile), como na interpretação.
+        - Mesmo tratamento do texto da convicção: normalizado, limite de tamanho (`TEXT_TOO_LONG`),
+          pergunta fora do tema ou instrução pra IA → `422 OUT_OF_SCOPE`; resposta reprovada nas
+          verificações → `503 AI_UNAVAILABLE`.
+      tags: [Interface 3 — Composição]
+      security:
+        - anonymousSession: []
+        - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExplanationInput' }
+            example: { question: Why is this asset here?, instrumentId: ins_semix, botCheckToken: 0.turnstile-token-exemplo }
+      responses:
+        '200':
+          description: Explicação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Explanation' }
+              example:
+                explanation: SEMI-X represents AI chip demand, the first exposure of your thesis. It carries most of the weight because it is the most direct representation in the catalog.
+                limitations: [It is a tokenized product, not direct ownership of the shares.]
+                remaining: 4
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: '`OUT_OF_SCOPE`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /instruments/{id}:
     get:
@@ -564,9 +660,34 @@ paths:
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
   /plans:
+    get:
+      operationId: listPlans
+      summary: 12 · Planos da wallet
+      description: |
+        Como as teses salvas da demo: uma wallet pode ter vários planos, rascunhos e ativos. Mais
+        recentes primeiro. Lista vazia se não há nenhum.
+      tags: [Interface 11 — Acompanhamento]
+      security:
+        - privyToken: []
+      responses:
+        '200':
+          description: Planos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/PlanSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createPlan
       summary: 11 · Salvar o rascunho como plano
+      description: |
+        A proposta precisa ser da sessão ou da wallet (senão `404`) e o rascunho precisa passar no
+        validador (senão `422 PLAN_INVALID` com `details.validation`). Avisos não impedem.
       tags: [Interfaces 5 e 6 — Conectar wallet e entrar]
       security:
         - privyToken: []
@@ -587,17 +708,19 @@ paths:
               schema: { $ref: '#/components/schemas/Plan' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/Unprocessable' }
 
-  /plans/current:
+  /plans/{id}:
     get:
-      operationId: getCurrentPlan
-      summary: 12 · Plano da wallet
-      description: O plano ativo, ou o rascunho mais recente. `404` se a wallet não tem plano.
+      operationId: getPlan
+      summary: 12 · Um plano da wallet
+      description: Só a wallet dona; de outra wallet → `404`.
       tags: [Interface 7 — Ativar plano, Interface 11 — Acompanhamento]
       security:
         - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
       responses:
         '200':
           description: Plano
@@ -606,12 +729,13 @@ paths:
               schema: { $ref: '#/components/schemas/Plan' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-
-  /plans/{id}:
     put:
       operationId: updatePlan
       summary: 13 · Alterar o plano (nova versão)
-      description: Gera `version` + 1. Operações já feitas não são reescritas.
+      description: |
+        Gera `version` + 1. Operações já feitas não são reescritas. Mesmas regras do validador que
+        `POST /proposals/{id}/validations` (instrumentos só os do plano); reprovado →
+        `422 PLAN_INVALID` com `details.validation`.
       tags: [Interface 11 — Acompanhamento]
       security:
         - privyToken: []
@@ -637,7 +761,6 @@ paths:
               schema: { $ref: '#/components/schemas/Plan' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Unprocessable' }
     patch:
       operationId: activatePlan
@@ -645,6 +768,9 @@ paths:
       description: |
         Ativar é mudar o estado do plano pra `active`, com os mints acompanhados. Saldos preexistentes
         entram sem custo inventado. Mudar o escopo depois é um novo `PATCH`, registrado.
+        - `trackedMints` só pode ter mints de itens ativos do plano; outro mint → `400`.
+        - Plano reprovado no validador não ativa → `422 PLAN_INVALID`.
+        - Um plano ativo não volta a rascunho.
       tags: [Interface 7 — Ativar plano]
       security:
         - privyToken: []
@@ -665,6 +791,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/Unprocessable' }
 
   /operations:
     post:
@@ -853,7 +980,7 @@ paths:
               schema: { $ref: '#/components/schemas/Operation' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /plans/current/position:
+  /plans/{id}/position:
     get:
       operationId: getPosition
       summary: 21 · Posição do plano
@@ -865,6 +992,8 @@ paths:
       tags: [Interface 11 — Acompanhamento]
       security:
         - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
       responses:
         '200':
           description: Posição
@@ -874,7 +1003,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /plans/current/reconciliations:
+  /plans/{id}/reconciliations:
     post:
       operationId: createReconciliation
       summary: 22 · Pedir reconciliação
@@ -882,12 +1011,14 @@ paths:
       tags: [Interface 11 — Acompanhamento]
       security:
         - privyToken: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
       responses:
         '202':
           description: Reconciliação iniciada
           headers:
             Location:
-              description: '`/api/v1/plans/current/position` — onde ler o resultado'
+              description: '`/api/v1/plans/{id}/position` — onde ler o resultado'
               schema: { type: string }
           content:
             application/json:
@@ -1015,7 +1146,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     Forbidden:
-      description: '`ANON_QUOTA_USED` · `WALLET_QUOTA_USED` · `BOT_CHECK_FAILED` · `WALLET_MISMATCH`'
+      description: '`ANON_QUOTA_USED` · `WALLET_QUOTA_USED` · `EXPLANATIONS_USED` · `BOT_CHECK_FAILED` · `WALLET_MISMATCH`'
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1027,7 +1158,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
     Conflict:
-      description: '`IDEMPOTENCY_CONFLICT` · `OPERATION_IN_PROGRESS` · `QUOTE_EXPIRED` · `MATERIAL_CHANGE` · `ACTIVE_PLAN_EXISTS`'
+      description: '`IDEMPOTENCY_CONFLICT` · `OPERATION_IN_PROGRESS` · `QUOTE_EXPIRED` · `MATERIAL_CHANGE`'
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1086,14 +1217,16 @@ components:
                 - ANON_QUOTA_USED
                 - WALLET_QUOTA_USED
                 - BOT_CHECK_FAILED
+                - EXPLANATIONS_USED
                 - OUT_OF_SCOPE
+                - INTERPRETATION_NOT_READY
+                - INTERPRETATION_CURATED
                 - WALLET_MISMATCH
                 - NOT_FOUND
                 - IDEMPOTENCY_CONFLICT
                 - OPERATION_IN_PROGRESS
                 - QUOTE_EXPIRED
                 - MATERIAL_CHANGE
-                - ACTIVE_PLAN_EXISTS
                 - PLAN_INVALID
                 - INSTRUMENT_NOT_APPROVED
                 - INSTRUMENT_RESTRICTED
@@ -1132,7 +1265,7 @@ components:
                 address: { type: string }
                 network: { type: string, example: solana-mainnet }
                 quota: { $ref: '#/components/schemas/Quota' }
-        activePlanId: { type: [string, 'null'] }
+        activePlanId: { type: [string, 'null'], description: 'O plano ativo mais recente da wallet; a lista completa vem de `GET /plans`.' }
         activeOperationIds:
           type: array
           items: { type: string }
@@ -1257,7 +1390,8 @@ components:
         issuerName: { type: [string, 'null'] }
     AvailabilityState:
       type: string
-      enum: [available, no_route, suspended, restricted]
+      enum: [available, no_route, suspended, restricted, unknown]
+      description: '`unknown`: sem consulta à Jupiter ainda (ou ela falhou). Deixa a validação `conclusive: false`.'
     Availability:
       type: object
       required: [buy, sell, checkedAt]
@@ -1265,7 +1399,7 @@ components:
       properties:
         buy: { $ref: '#/components/schemas/AvailabilityState' }
         sell: { $ref: '#/components/schemas/AvailabilityState' }
-        checkedAt: { type: string, format: date-time }
+        checkedAt: { type: [string, 'null'], format: date-time, description: '`null` quando `unknown`.' }
     ProposalItem:
       type: object
       required: [instrument, exposureIds, weightBps, plannedUsdc, rationale, risks, availability, state]
@@ -1355,11 +1489,23 @@ components:
         items:
           type: array
           items: { $ref: '#/components/schemas/PlanItemInput' }
-    Plan:
+    PlanSummary:
       type: object
-      required: [id, status, version, budgetUsdc, items, validation, trackedMints, interpretationSummary, createdAt, updatedAt]
+      required: [id, status, version, budgetUsdc, interpretationSummary, createdAt, updatedAt]
       properties:
         id: { type: string }
+        status: { type: string, enum: [draft, active] }
+        version: { type: integer }
+        budgetUsdc: { $ref: '#/components/schemas/Decimal' }
+        interpretationSummary: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Plan:
+      type: object
+      required: [id, proposalId, status, version, budgetUsdc, items, validation, trackedMints, interpretationSummary, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        proposalId: { type: string }
         status: { type: string, enum: [draft, active] }
         version: { type: integer }
         budgetUsdc: { $ref: '#/components/schemas/Decimal' }
@@ -1373,6 +1519,22 @@ components:
         interpretationSummary: { type: string }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+    ExplanationInput:
+      type: object
+      required: [question]
+      properties:
+        question: { type: string, maxLength: 300 }
+        instrumentId: { type: string, description: Ativo da proposta sobre o qual é a pergunta (opcional). }
+        botCheckToken: { type: string, description: Token do Cloudflare Turnstile; obrigatório sem wallet. }
+    Explanation:
+      type: object
+      required: [explanation, limitations, remaining]
+      properties:
+        explanation: { type: string }
+        limitations:
+          type: array
+          items: { type: string }
+        remaining: { type: integer, description: Perguntas que ainda cabem nesta proposta. }
     InstrumentDetail:
       type: object
       required: [instrument, represents, issuer, economicRights, limitations, risks, costs, howToTrade, availability, evidence, eligibilityNotes]

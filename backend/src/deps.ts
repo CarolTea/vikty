@@ -1,13 +1,18 @@
 import { PrivyClient } from '@privy-io/node';
 import { Redis } from 'ioredis';
+import { noComposerYet, type ProposalComposer } from './ai/composer.js';
+import { noExplainerYet, type ProposalExplainer } from './ai/explainer.js';
 import { noInterpreterYet, type ConvictionInterpreter } from './ai/interpreter.js';
-import { openAIInterpreter } from './ai/openai.js';
+import { OpenAIComposer, OpenAIExplainer, OpenAIInterpreter, openAIClient } from './ai/openai.js';
 import { PrivyWalletResolver, type WalletResolver } from './auth/privy.js';
+import { noAvailabilityYet, type AvailabilityLookup } from './availability.js';
+import { devCatalog, registryCatalog, type Catalog } from './catalog/instruments.js';
 import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile.js';
 import type { Config } from './config.js';
 import { pgDb, type Db } from './db/index.js';
 import { PgInterpretationStore, type InterpretationStore } from './interpretations.js';
-import { noPlansYet, type PlanLookup } from './plans.js';
+import { PgPlanStore, type PlanStore } from './plans.js';
+import { PgProposalStore, type ProposalStore } from './proposals.js';
 import { RedisQuotaStore, type QuotaStore } from './quota.js';
 
 // Everything routes use to reach the outside world. Tests pass fakes; index.ts passes the real ones.
@@ -15,10 +20,15 @@ export interface Deps {
   config: Config;
   quota: QuotaStore;
   wallets: WalletResolver;
-  plans: PlanLookup;
+  plans: PlanStore;
   botCheck: BotCheck;
   interpreter: ConvictionInterpreter;
   interpretations: InterpretationStore;
+  composer: ProposalComposer;
+  explainer: ProposalExplainer;
+  proposals: ProposalStore;
+  catalog: Catalog;
+  availability: AvailabilityLookup;
   redis?: Redis;
   close?: () => Promise<void>;
 }
@@ -45,16 +55,23 @@ export function createDeps(config: Config): Deps & { db: Db } {
   });
 
   const db = pgDb(config.DATABASE_URL);
+  const openai = config.AI_API_KEY ? openAIClient(config.AI_API_KEY, config.AI_TIMEOUT_MS) : null;
 
   return {
     config,
     quota: new RedisQuotaStore(redis),
     wallets: new PrivyWalletResolver(privy, redis),
-    plans: noPlansYet,
+    plans: new PgPlanStore(db),
     botCheck: config.TURNSTILE_SECRET_KEY ? new TurnstileBotCheck(config.TURNSTILE_SECRET_KEY) : skipBotCheck,
     // Without a key (allowed outside production), free-text interpretations answer 503 AI_UNAVAILABLE.
-    interpreter: config.AI_API_KEY ? openAIInterpreter(config.AI_API_KEY, config.AI_MODEL) : noInterpreterYet,
+    interpreter: openai ? new OpenAIInterpreter(openai, config.AI_MODEL) : noInterpreterYet,
     interpretations: new PgInterpretationStore(db),
+    composer: openai ? new OpenAIComposer(openai, config.AI_MODEL) : noComposerYet,
+    explainer: openai ? new OpenAIExplainer(openai, config.AI_MODEL) : noExplainerYet,
+    proposals: new PgProposalStore(db),
+    catalog: config.DEV_APPROVE_DEMO_INSTRUMENTS ? devCatalog() : registryCatalog,
+    // No Jupiter adapter yet: every instrument is `unknown` and validations are inconclusive.
+    availability: noAvailabilityYet,
     db,
     redis,
     close: async () => {

@@ -1,12 +1,18 @@
 import { randomBytes } from 'node:crypto';
+import { createRequire } from 'node:module';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
 import { healthRoutes } from './routes/health.js';
+import { explanationRoutes } from './routes/explanations.js';
+import { instrumentRoutes } from './routes/instruments.js';
 import { interpretationRoutes } from './routes/interpretations.js';
+import { planRoutes } from './routes/plans.js';
+import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/session.js';
+import { thesisRoutes } from './routes/theses.js';
 import { validatorCompiler } from './validation.js';
 
 export async function buildApp(deps: Deps): Promise<FastifyInstance> {
@@ -19,7 +25,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
       level: config.LOG_LEVEL,
       // Tokens and session cookies never reach the logs.
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
-      ...(config.NODE_ENV === 'development' && { transport: { target: 'pino-pretty' } }),
+      ...(config.NODE_ENV === 'development' && hasPrettyLogs() && { transport: { target: 'pino-pretty' } }),
     },
   });
 
@@ -34,6 +40,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(cors, {
     origin: config.WEB_ORIGIN,
     credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH'],
   });
 
   // Production requires SESSION_SECRET (see config.ts). Locally an empty one gets a random
@@ -83,10 +90,26 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
   await app.register(
     async (api) => {
       await api.register(sessionRoutes);
+      await api.register(thesisRoutes);
       await api.register(interpretationRoutes);
+      await api.register(proposalRoutes);
+      await api.register(explanationRoutes);
+      await api.register(instrumentRoutes);
+      await api.register(planRoutes);
     },
     { prefix: '/api/v1' },
   );
 
   return app;
+}
+
+// pino-pretty is a dev dependency: present with `npm run dev`, pruned from the Docker image. Without
+// it, development logs stay JSON instead of crashing the server at startup.
+function hasPrettyLogs(): boolean {
+  try {
+    createRequire(import.meta.url).resolve('pino-pretty');
+    return true;
+  } catch {
+    return false;
+  }
 }

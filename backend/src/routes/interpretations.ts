@@ -1,17 +1,20 @@
 import type { FastifyBaseLogger, FastifyPluginAsync } from 'fastify';
 import { checkInterpretation, normalizeText, screenConviction, outOfScope } from '../ai/guard.js';
 import { aiInterpretationSchema, aiUnavailable, type ConvictionInterpreter } from '../ai/interpreter.js';
-import { bearerToken, readOrCreateSession, sessionHash } from '../auth/session.js';
+import { bearerToken, canAccess, readOrCreateSession, sessionHash, type Owner } from '../auth/session.js';
 import { ApiError } from '../errors.js';
 import {
+  applyPatch,
   contentFromAi,
   newInterpretationId,
   statusOf,
   type InterpretationContent,
+  type InterpretationPatch,
   type InterpretationRecord,
 } from '../interpretations.js';
 import { ANON_FREE_INTERPRETATIONS, quotaSchema, quotaWindow } from '../quota.js';
 import { findSuggestedThesis } from '../theses.js';
+import { idParam, ownerOf, requireHuman, reserve } from './shared.js';
 
 type Body =
   | { source: 'free_text'; text: string; botCheckToken?: string; deviceHash?: string }
@@ -44,6 +47,33 @@ const bodySchema = {
       },
     },
   ],
+} as const;
+
+const idList = { type: 'array', maxItems: 20, items: { type: 'string', maxLength: 64 } } as const;
+const labelList = { type: 'array', maxItems: 10, items: { type: 'string', maxLength: 200 } } as const;
+
+// InterpretationPatch. Every field optional; an empty body changes nothing.
+const patchSchema = {
+  type: 'object',
+  properties: {
+    answers: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        required: ['ambiguityId', 'optionId'],
+        properties: {
+          ambiguityId: { type: 'string', maxLength: 64 },
+          optionId: { type: 'string', maxLength: 64 },
+        },
+      },
+    },
+    removeExposureIds: idList,
+    addExclusions: labelList,
+    removeExclusionIds: idList,
+    addRestrictions: labelList,
+    removeRestrictionIds: idList,
+  },
 } as const;
 
 const labeledItemSchema = {
@@ -106,7 +136,7 @@ const interpretationSchema = {
 } as const;
 
 export const interpretationRoutes: FastifyPluginAsync = async (app) => {
-  const { config, quota, wallets, botCheck, interpreter, interpretations } = app.deps;
+  const { config, quota, wallets, interpreter, interpretations } = app.deps;
 
   // - `suggested`: curated interpretation, no AI and no quota.
   // - `free_text` without a wallet: Turnstile, then the one free interpretation.
@@ -139,7 +169,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
         record = buildRecord(owner, 'suggested', thesis.id, thesis.interpretation);
         await interpretations.create(record);
       } else {
-        if (!wallet) await requireHuman(body.botCheckToken, request.ip);
+        if (!wallet) await requireHuman(app.deps, body.botCheckToken, request.ip);
 
         const release = wallet
           ? await reserve(
@@ -183,17 +213,7 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
 
       reply.status(201).header('Location', `${request.routeOptions.url}/${record.id}`);
       return {
-        id: record.id,
-        source: record.source,
-        curated: record.curated,
-        summary: record.summary,
-        exposures: record.exposures,
-        exclusions: record.exclusions,
-        restrictions: record.restrictions,
-        ambiguities: record.ambiguities,
-        representation: record.representation,
-        limitations: record.limitations,
-        status: record.status,
+        ...publicFields(record),
         quota: {
           anonymousFreeUsed: anonUsed >= ANON_FREE_INTERPRETATIONS,
           wallet: wallet ? { limit, remaining: Math.max(0, limit - walletUsed), resetsAt } : null,
@@ -202,11 +222,37 @@ export const interpretationRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  async function requireHuman(token: string | undefined, remoteIp: string): Promise<void> {
-    if (!token || !(await botCheck.verify(token, remoteIp))) {
-      throw new ApiError(403, 'BOT_CHECK_FAILED', "We couldn't verify you're human. Please try again.");
-    }
+  async function ownInterpretation(id: string, owner: Owner): Promise<InterpretationRecord> {
+    const record = await interpretations.get(id);
+    if (!record || !canAccess(record, owner)) throw new ApiError(404, 'NOT_FOUND', 'Not found.');
+    return record;
   }
+
+  // Reloading the Interpretation screen. No quota in the answer: it belongs to creating one.
+  app.get<{ Params: { id: string } }>(
+    '/interpretations/:id',
+    { schema: { params: idParam, response: { 200: interpretationSchema } } },
+    async (request, reply) => {
+      const owner = await ownerOf(app.deps, request, reply);
+      return publicFields(await ownInterpretation(request.params.id, owner));
+    },
+  );
+
+  // Structured corrections and answers: no AI, no quota. Saved only on the version it was applied
+  // to; when another correction got there first, it is applied again on top of that one.
+  app.patch<{ Params: { id: string }; Body: InterpretationPatch }>(
+    '/interpretations/:id',
+    { schema: { params: idParam, body: patchSchema, response: { 200: interpretationSchema } } },
+    async (request, reply) => {
+      const owner = await ownerOf(app.deps, request, reply);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const record = await ownInterpretation(request.params.id, owner);
+        const next = applyPatch(record, request.body);
+        if (next === record || (await interpretations.update(next))) return publicFields(next);
+      }
+      throw new Error('interpretation kept changing under concurrent corrections');
+    },
+  );
 };
 
 // Normalized first, so invisible characters neither count nor reach the AI. Blank text is a
@@ -222,21 +268,6 @@ function checkConviction(text: string, max: number): string {
   const refused = screenConviction(conviction);
   if (refused) throw outOfScope(refused);
   return conviction;
-}
-
-// Counts one use; over the limit it gives it straight back and refuses. Returns the release.
-async function reserve(
-  take: () => Promise<number>,
-  release: () => Promise<void>,
-  limit: number,
-  refusal: () => ApiError,
-): Promise<() => Promise<void>> {
-  const used = await take();
-  if (used > limit) {
-    await release();
-    throw refusal();
-  }
-  return release;
 }
 
 // OUT_OF_SCOPE from the adapter passes through; any other failure is AI_UNAVAILABLE, and so is an
@@ -271,6 +302,23 @@ async function interpret(
   return contentFromAi(checked.value);
 }
 
+// The contract's Interpretation, without owner, version or quota.
+function publicFields(r: InterpretationRecord) {
+  return {
+    id: r.id,
+    source: r.source,
+    curated: r.curated,
+    summary: r.summary,
+    exposures: r.exposures,
+    exclusions: r.exclusions,
+    restrictions: r.restrictions,
+    ambiguities: r.ambiguities,
+    representation: r.representation,
+    limitations: r.limitations,
+    status: r.status,
+  };
+}
+
 function buildRecord(
   owner: { sessionHash: string; wallet: string | null },
   source: 'free_text' | 'suggested',
@@ -285,5 +333,6 @@ function buildRecord(
     suggestedThesisId,
     ...content,
     status: statusOf(content.ambiguities),
+    version: 1,
   };
 }

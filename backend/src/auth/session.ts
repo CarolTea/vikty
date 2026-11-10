@@ -44,3 +44,16 @@ export function bearerToken(request: FastifyRequest): string | null {
   }
   return match[1];
 }
+
+// Who is asking: the anonymous session and, when signed in, the wallet.
+export interface Owner {
+  sessionHash: string;
+  wallet: string | null;
+}
+
+// A resource is visible to the session that created it, or to the wallet it belongs to. A
+// different wallet never sees it, even from the same browser. Anything else answers 404 (contract).
+export function canAccess(resource: Owner, owner: Owner): boolean {
+  if (resource.wallet !== null && owner.wallet !== null && resource.wallet !== owner.wallet) return false;
+  return resource.sessionHash === owner.sessionHash || (resource.wallet !== null && resource.wallet === owner.wallet);
+}

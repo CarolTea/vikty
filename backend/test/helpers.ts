@@ -1,13 +1,19 @@
 import { PGlite } from '@electric-sql/pglite';
+import type { AiComposition, CompositionInput, ProposalComposer } from '../src/ai/composer.js';
+import type { AiExplanation, ExplanationInput, ProposalExplainer } from '../src/ai/explainer.js';
 import type { AiInterpretation, ConvictionInterpreter } from '../src/ai/interpreter.js';
 import type { BotCheck } from '../src/auth/turnstile.js';
+import type { AvailabilityLookup } from '../src/availability.js';
+import { findInstrument, type Catalog, type Instrument } from '../src/catalog/instruments.js';
+import type { Availability } from '../src/composition.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/index.js';
 import type { Deps } from '../src/deps.js';
 import { ApiError } from '../src/errors.js';
 import type { InterpretationRecord, InterpretationStore } from '../src/interpretations.js';
-import { noPlansYet } from '../src/plans.js';
+import type { PlanRecord, PlanStore } from '../src/plans.js';
+import type { ProposalRecord, ProposalStore } from '../src/proposals.js';
 import type { QuotaStore } from '../src/quota.js';
 
 export const WALLET = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
@@ -53,6 +59,20 @@ export class MemoryQuotaStore implements QuotaStore {
 
   async releaseWallet(address: string, day: string) {
     bump(this.wallet, `${address}:${day}`, -1);
+  }
+
+  readonly explanations = new Map<string, number>();
+
+  async explanationsUsed(proposalId: string) {
+    return this.explanations.get(proposalId) ?? 0;
+  }
+
+  async reserveExplanation(proposalId: string) {
+    return bump(this.explanations, proposalId, 1);
+  }
+
+  async releaseExplanation(proposalId: string) {
+    bump(this.explanations, proposalId, -1);
   }
 }
 
@@ -104,6 +124,140 @@ export class MemoryInterpretationStore implements InterpretationStore {
     if (this.fail) throw new Error('database down');
     this.records.push(record);
   }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async update(record: InterpretationRecord) {
+    const i = this.records.findIndex((r) => r.id === record.id && r.version === record.version - 1);
+    if (i === -1) return false;
+    this.records[i] = record;
+    return true;
+  }
+}
+
+// Registry entries approved for tests (the real registry approves only USDC so far), plus one that
+// stays unavailable.
+export const approvedForTest = (id: string): Instrument => ({
+  ...findInstrument(id)!,
+  status: 'approved',
+  mint: `${id.replace(/[^A-Za-z1-9]/g, '').slice(0, 30)}1111111111111111`,
+  decimals: 6,
+});
+
+export class FakeCatalog implements Catalog {
+  readonly instruments = new Map<string, Instrument>(
+    [
+      approvedForTest('ins_ondo_nvda'),
+      approvedForTest('ins_ondo_amd'),
+      approvedForTest('ins_ondo_vrt'),
+      approvedForTest('ins_ondo_ceg'),
+      findInstrument('ins_usdc')!,
+      findInstrument('ins_ondo_msft')!,
+    ].map((i) => [i.id, i]),
+  );
+  approved = () => [...this.instruments.values()].filter((i) => i.status === 'approved');
+  find = (id: string) => this.instruments.get(id);
+}
+
+export const AI_COMPOSITION: AiComposition = {
+  items: [
+    { instrumentId: 'ins_ondo_nvda', exposureIds: ['exp_1'], weightBps: 3500, rationale: 'Represents accelerated compute demand.' },
+    { instrumentId: 'ins_ondo_amd', exposureIds: ['exp_1'], weightBps: 2500, rationale: 'A second chipmaker, so the thesis does not rest on one company.' },
+    { instrumentId: 'ins_ondo_vrt', exposureIds: ['exp_2'], weightBps: 2500, rationale: 'Power and cooling equipment for data centers.' },
+    { instrumentId: 'ins_usdc', exposureIds: [], weightBps: 1500, rationale: 'Liquidity kept aside.' },
+  ],
+  excludedInstrumentIds: [],
+  limitations: [],
+};
+
+// Answers `answer` (AI_COMPOSITION by default), or throws it when it is an Error; records the input.
+export class FakeComposer implements ProposalComposer {
+  readonly calls: CompositionInput[] = [];
+  answer: unknown = AI_COMPOSITION;
+
+  async compose(input: CompositionInput) {
+    this.calls.push(input);
+    if (this.answer instanceof Error) throw this.answer;
+    return this.answer;
+  }
+}
+
+export class MemoryProposalStore implements ProposalStore {
+  readonly records: ProposalRecord[] = [];
+
+  async create(record: ProposalRecord) {
+    this.records.push(record);
+  }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async latestFor(interpretationId: string, version: number) {
+    return this.records.findLast((r) => r.interpretationId === interpretationId && r.interpretationVersion === version) ?? null;
+  }
+}
+
+export const AI_EXPLANATION: AiExplanation = {
+  explanation: 'NVDAon represents accelerated compute, the first exposure of your thesis, at 35%.',
+  limitations: ['It is a tokenized product, not direct ownership of the shares.'],
+};
+
+// Answers `answer` (AI_EXPLANATION by default), or throws it when it is an Error; records the input.
+export class FakeExplainer implements ProposalExplainer {
+  readonly calls: ExplanationInput[] = [];
+  answer: unknown = AI_EXPLANATION;
+
+  async explain(input: ExplanationInput) {
+    this.calls.push(input);
+    if (this.answer instanceof Error) throw this.answer;
+    return this.answer;
+  }
+}
+
+export class MemoryPlanStore implements PlanStore {
+  readonly records: PlanRecord[] = [];
+  readonly scopeChanges: { planId: string; trackedMints: string[] }[] = [];
+
+  async create(record: PlanRecord) {
+    this.records.push(record);
+  }
+
+  async get(id: string) {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
+  async listByWallet(wallet: string) {
+    return this.records.filter((r) => r.wallet === wallet).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+
+  async update(record: PlanRecord, expectedVersion: number, scopeChanged: boolean) {
+    const i = this.records.findIndex((r) => r.id === record.id && r.version === expectedVersion);
+    if (i === -1) return false;
+    this.records[i] = record;
+    if (scopeChanged) this.scopeChanges.push({ planId: record.id, trackedMints: record.trackedMints });
+    return true;
+  }
+
+  async activePlanId(wallet: string) {
+    return (await this.listByWallet(wallet)).find((r) => r.status === 'active')?.id ?? null;
+  }
+
+  async activeOperationIds() {
+    return [];
+  }
+}
+
+// Every instrument buyable unless set otherwise.
+export class FakeAvailability implements AvailabilityLookup {
+  readonly states = new Map<string, Availability>();
+
+  async check(ids: string[]) {
+    const open: Availability = { buy: 'available', sell: 'available', checkedAt: '2026-10-09T12:00:00.000Z' };
+    return new Map(ids.map((id) => [id, this.states.get(id) ?? open]));
+  }
 }
 
 // Real Postgres (PGlite, in memory) behind the app's Db interface.
@@ -125,6 +279,12 @@ type TestDeps = Deps & {
   botCheck: FakeBotCheck;
   interpreter: FakeInterpreter;
   interpretations: MemoryInterpretationStore;
+  composer: FakeComposer;
+  explainer: FakeExplainer;
+  plans: MemoryPlanStore;
+  proposals: MemoryProposalStore;
+  catalog: FakeCatalog;
+  availability: FakeAvailability;
 };
 
 export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
@@ -137,10 +297,15 @@ export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
         throw new ApiError(401, 'UNAUTHENTICATED', 'Your session has expired. Connect your wallet again.');
       },
     },
-    plans: noPlansYet,
+    plans: new MemoryPlanStore(),
     botCheck: new FakeBotCheck(),
     interpreter: new FakeInterpreter(),
     interpretations: new MemoryInterpretationStore(),
+    composer: new FakeComposer(),
+    explainer: new FakeExplainer(),
+    proposals: new MemoryProposalStore(),
+    catalog: new FakeCatalog(),
+    availability: new FakeAvailability(),
     ...overrides,
   } as TestDeps;
 }

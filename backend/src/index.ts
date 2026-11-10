@@ -6,6 +6,9 @@ import { createDeps } from './deps.js';
 const config = loadConfig();
 const deps = createDeps(config);
 const app = await buildApp(deps);
+if (config.DEV_APPROVE_DEMO_INSTRUMENTS) {
+  app.log.warn('DEV_APPROVE_DEMO_INSTRUMENTS is on: every instrument is approved with a fake mint (local testing only)');
+}
 
 try {
   const ran = await migrate(deps.db);
