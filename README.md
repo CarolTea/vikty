@@ -17,7 +17,7 @@ within partner wallets, apps and AI agents through the VicTy API.
 
 **Built by women. Built for independent decisions.**
 
-[Explore VicTy](https://victy.finance) · [Try the demo](https://victy.finance/demo) · [API contract](Docs/api/openapi.yaml) · [Roadmap](#roadmap)
+[Explore VicTy](https://victy.finance) · [API contract](Docs/api/openapi.yaml) · [Roadmap](#roadmap)
 
 🚧 **Under construction** — MVP built for a hackathon.
 
@@ -43,8 +43,8 @@ and where that representation falls short.
 
 | Pillar | Purpose | Status |
 | --- | --- | --- |
-| **Thesis Engine** | Translate beliefs into understandable portfolios, with rationale and limitations. | In the demo app, and as the VicTy API (interpretation and composition). |
-| **SocialFi** | Discover, share and adapt strategies from creators and communities. | Demonstration interface and in-session publishing. A persistent network and creator compensation are on the roadmap. |
+| **Thesis Engine** | Translate beliefs into understandable portfolios, with rationale and limitations. | In the VicTy API (interpretation and composition). |
+| **SocialFi** | Discover, share and adapt strategies from creators and communities. | On the roadmap. |
 | **API-first** | Bring VicTy intelligence to wallets, apps, fintechs and agents. | A versioned [OpenAPI contract](Docs/api/openapi.yaml) and its first routes in [`backend/`](backend/). Partner access is on the roadmap. |
 
 ## Principles
@@ -72,7 +72,7 @@ This repository holds two applications:
 
 ```text
 .
-├── frontend/           # The web app (landing, demo, dashboard), built and published with Lovable
+├── frontend/           # The web app, built on the API contract and the design system (in progress)
 ├── backend/            # The VicTy API: interpretation, composition, validation, sessions and quotas
 ├── Docs/
 │   ├── api/            # OpenAPI contract between frontend and backend (published to GitHub Pages)
@@ -81,38 +81,9 @@ This repository holds two applications:
 └── render.yaml         # Deploys the API and Redis on Render
 ```
 
-### Two server sides, for now
-
-The frontend was born as a self-contained Lovable app, so it still has **its own server functions**
-(`frontend/src/lib/*.functions.ts`, `frontend/src/lib/ai/`, Supabase): they power today's demo,
-early-access list, email login and simulated dashboard.
-
-**`backend/` is where VicTy's logic lives from now on.** It implements the [API
-contract](Docs/api/openapi.yaml): wallet sign-in through Privy, real Solana execution through Jupiter,
-and the rules in the PRD. The frontend moves to it screen by screen; as each screen does, the
-matching demo server function goes away.
-
-| In the demo app (`frontend/`) | In the VicTy API (`backend/`) |
-| --- | --- |
-| Thesis clarification and interpretation | `POST /interpretations` (scope gate, input and output checks, quotas) |
-| Portfolio proposal | `POST /proposals`, `POST /proposals/{id}/validations` |
-| Curated demo catalog with fixed prices | Asset Registry: only instruments with a confirmed mint are approved |
-| Anonymous demo sessions | Signed anonymous session cookie |
-| Wallet message approval | Privy Sign-In With Solana |
-| Email login and saved theses | Plans tied to the wallet (next) |
-| Simulated performance | Real position from on-chain data (next) |
-
-### `frontend/` comes from another repository
-
-`frontend/` is imported, with its full history, from
-[CarolTea/victylp](https://github.com/CarolTea/victylp), the repository Lovable edits and publishes.
-**Change the frontend there (or in Lovable), never directly here**, then bring the changes in:
-
-```bash
-git pull -X subtree=frontend https://github.com/CarolTea/victylp.git main
-```
-
-A direct edit in `frontend/` would conflict with the next pull.
+**`backend/` is where VicTy's logic lives.** It implements the [API contract](Docs/api/openapi.yaml):
+wallet sign-in through Privy, real Solana execution through Jupiter, and the rules in the PRD. The
+frontend talks to VicTy only through that contract.
 
 ## Stack and integrations
 
@@ -122,12 +93,12 @@ A direct edit in `frontend/` would conflict with the next pull.
 | Execution | Jupiter Swap API v2 (`/order` + `/execute`) |
 | Prices and metadata | Jupiter Price API v3 · Jupiter Tokens API v2 |
 | Wallet and sign-in | Standard Solana wallets · Privy (Sign-In With Solana) |
-| Frontend | React 19, TypeScript, TanStack Start, Tailwind CSS 4, Radix UI · built with Lovable, at `victy.finance` |
+| Frontend | Being rebuilt on the [design system](Docs/design-system/README.md) · at `victy.finance` |
 | Backend | Node.js 22, TypeScript, Fastify · on Render, at `api.victy.finance` |
 | AI | OpenAI with structured outputs, validated with Zod and deterministic checks |
-| Data | PostgreSQL on Neon · Redis (Render Key Value) for quotas · Supabase for the demo app |
+| Data | PostgreSQL on Neon · Redis (Render Key Value) for quotas |
 | Bot protection | Cloudflare Turnstile |
-| Tests | `node:test` with PGlite (backend) · Bun (frontend) |
+| Tests | `node:test` with PGlite (backend) |
 
 ## Running locally
 
@@ -143,51 +114,30 @@ docker compose up --build               # API on port 3001, plus PostgreSQL and 
 Without Docker: `cd backend && npm ci && npm run dev` (needs Postgres and Redis running). Tests:
 `npm test` — they use fakes and an in-memory Postgres, no services needed.
 
-### Frontend
-
-Prerequisites: [Bun](https://bun.sh/) and access to the Supabase / Lovable Cloud project. See
-[`frontend/README.md`](frontend/README.md) for its environment variables.
-
-```bash
-cd frontend
-bun install --frozen-lockfile
-bun run dev
-```
-
-Checks: `bun test tests/`, `bunx tsc --noEmit`, `bun run build`.
-
 ## Deploy
 
-The API and Redis run on Render ([`render.yaml`](render.yaml)), Postgres on Neon, and the frontend is
-published by Lovable at `victy.finance`, calling the API at `api.victy.finance`.
+The API and Redis run on Render ([`render.yaml`](render.yaml)) and Postgres on Neon. The frontend will
+be published at `victy.finance`, calling the API at `api.victy.finance`.
 
 ## Roadmap
 
 Phases describe priorities, not committed dates.
 
-### 1. Demonstration experience — foundation implemented
-
-- [x] Visual identity, landing page and early-access registration.
-- [x] Interactive belief, clarification and portfolio journey.
-- [x] Thesis Engine with AI, curated catalog and response validation.
-- [x] Wallet connection, email login, private theses and an illustrative dashboard.
-- [x] Demonstration interface for strategy discovery and in-session publishing.
-
-### 2. VicTy API and real execution
+### 1. VicTy API and real execution
 
 - [x] API contract for the MVP journey ([OpenAPI](Docs/api/openapi.yaml)).
 - [x] Anonymous sessions, wallet sign-in and AI quotas.
 - [x] Interpretation with scope gate and input/output checks.
 - [x] Asset Registry and deterministic composition validator.
 - [x] Composition proposals and draft validation.
-- [ ] Suggested theses, interpretation corrections and instrument details.
-- [ ] Plans tied to the wallet.
+- [x] Suggested theses, interpretation corrections and instrument details.
+- [x] Plans tied to the wallet.
 - [ ] Verify mints, availability, eligibility and liquidity of executable instruments.
 - [ ] Jupiter quotes and individual, wallet-signed buys and sells, without duplicate operations.
 - [ ] Position and activity reconciled with on-chain data.
-- [ ] Move every frontend screen to the API.
+- [ ] Web app built on the API contract and the design system.
 
-### 3. SocialFi — strategies as shareable content
+### 2. SocialFi — strategies as shareable content
 
 - [ ] Persist public strategies, authorship and versions.
 - [ ] Discovery, following and adaptation of other creators' strategies.
@@ -195,7 +145,7 @@ Phases describe priorities, not committed dates.
 - [ ] Transparent criteria for discovery and rankings.
 - [ ] Execution attribution and creator compensation.
 
-### 4. API-first — partner distribution
+### 3. API-first — partner distribution
 
 - [ ] Partner authentication, quotas, observability and documentation.
 - [ ] Integration examples for wallets, applications and agents.
@@ -215,9 +165,6 @@ theses; simulated amounts don't count.
 
 - [API contract (OpenAPI)](Docs/api/openapi.yaml)
 - [Design system](Docs/design-system/README.md)
-- [Thesis Engine and demo catalog](frontend/docs/thesis-engine.md)
-- [Demo wallet approval](frontend/docs/solana-demo-wallet.md)
-- [Demo persistence and manual tests](frontend/docs/thesis-persistence-validation.md)
 
 ## Disclaimer
 
