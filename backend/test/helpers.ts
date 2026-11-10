@@ -11,6 +11,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/index.js';
 import type { Deps } from '../src/deps.js';
 import { ApiError } from '../src/errors.js';
+import type { EventRecord, EventStore } from '../src/events.js';
 import type { InterpretationRecord, InterpretationStore } from '../src/interpretations.js';
 import type { PlanRecord, PlanStore } from '../src/plans.js';
 import type { ProposalRecord, ProposalStore } from '../src/proposals.js';
@@ -113,6 +114,14 @@ export class FakeInterpreter implements ConvictionInterpreter {
     this.calls.push(conviction);
     if (this.answer instanceof Error) throw this.answer;
     return this.answer;
+  }
+}
+
+export class MemoryEventStore implements EventStore {
+  readonly records: EventRecord[] = [];
+
+  async record(events: EventRecord[]) {
+    this.records.push(...events);
   }
 }
 
@@ -285,6 +294,7 @@ type TestDeps = Deps & {
   proposals: MemoryProposalStore;
   catalog: FakeCatalog;
   availability: FakeAvailability;
+  events: MemoryEventStore;
 };
 
 export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
@@ -306,6 +316,7 @@ export function testDeps(overrides: Partial<Deps> = {}): TestDeps {
     proposals: new MemoryProposalStore(),
     catalog: new FakeCatalog(),
     availability: new FakeAvailability(),
+    events: new MemoryEventStore(),
     ...overrides,
   } as TestDeps;
 }

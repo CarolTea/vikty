@@ -7,27 +7,6 @@ import { migrate } from '../src/db/migrations.js';
 import { PgEventStore } from '../src/events.js';
 import { testDb, testDeps, VALID_TOKEN, WALLET } from './helpers.js';
 
-describe('GET /theses/suggested', () => {
-  it('lists the suggested theses without their curated interpretation', async () => {
-    const app = await buildApp(testDeps());
-    const res = await app.inject({ method: 'GET', url: '/api/v1/theses/suggested' });
-
-    assert.equal(res.statusCode, 200);
-    const { items } = res.json();
-    assert.ok(items.length > 0);
-    for (const item of items) {
-      assert.deepEqual(Object.keys(item).sort(), ['id', 'summary', 'text', 'title']);
-    }
-    assert.deepEqual(items[0], {
-      id: 'th_ai_infra',
-      title: 'AI infrastructure',
-      summary: 'Chips, data centers and the energy that power AI.',
-      text: 'AI will reshape data center infrastructure over the next 5 years.',
-    });
-    await app.close();
-  });
-});
-
 const EVENTS = '/api/v1/events';
 const AT = '2026-09-30T14:00:00Z';
 

@@ -5,6 +5,7 @@ import cors from '@fastify/cors';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import type { Deps } from './deps.js';
 import { ApiError } from './errors.js';
+import { eventRoutes } from './routes/events.js';
 import { healthRoutes } from './routes/health.js';
 import { explanationRoutes } from './routes/explanations.js';
 import { instrumentRoutes } from './routes/instruments.js';
@@ -96,6 +97,7 @@ export async function buildApp(deps: Deps): Promise<FastifyInstance> {
       await api.register(explanationRoutes);
       await api.register(instrumentRoutes);
       await api.register(planRoutes);
+      await api.register(eventRoutes);
     },
     { prefix: '/api/v1' },
   );

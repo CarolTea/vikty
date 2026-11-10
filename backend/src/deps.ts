@@ -10,6 +10,7 @@ import { devCatalog, registryCatalog, type Catalog } from './catalog/instruments
 import { skipBotCheck, TurnstileBotCheck, type BotCheck } from './auth/turnstile.js';
 import type { Config } from './config.js';
 import { pgDb, type Db } from './db/index.js';
+import { PgEventStore, type EventStore } from './events.js';
 import { PgInterpretationStore, type InterpretationStore } from './interpretations.js';
 import { PgPlanStore, type PlanStore } from './plans.js';
 import { PgProposalStore, type ProposalStore } from './proposals.js';
@@ -29,6 +30,7 @@ export interface Deps {
   proposals: ProposalStore;
   catalog: Catalog;
   availability: AvailabilityLookup;
+  events: EventStore;
   redis?: Redis;
   close?: () => Promise<void>;
 }
@@ -72,6 +74,7 @@ export function createDeps(config: Config): Deps & { db: Db } {
     catalog: config.DEV_APPROVE_DEMO_INSTRUMENTS ? devCatalog() : registryCatalog,
     // No Jupiter adapter yet: every instrument is `unknown` and validations are inconclusive.
     availability: noAvailabilityYet,
+    events: new PgEventStore(db),
     db,
     redis,
     close: async () => {
