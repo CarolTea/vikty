@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { ApiError } from '../errors.js';
 
-// Turns a free-text conviction into a structured interpretation (E1 rules 3 and 8).
+// Turns a free-text conviction into a structured interpretation.
 // The adapter is OpenAI (./openai.ts); tests use a fake, and without AI_API_KEY the route answers
 // 503 AI_UNAVAILABLE. Whatever an adapter returns is untrusted: the route checks it
-// against `aiInterpretationSchema` before using any of it (SEGURANCA: output outside the schema
-// is rejected).
+// against `aiInterpretationSchema` before using any of it, and output outside the schema
+// is rejected.
 export interface ConvictionInterpreter {
   interpret(conviction: string): Promise<unknown>;
 }

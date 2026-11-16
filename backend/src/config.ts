@@ -62,7 +62,7 @@ const schema = z
     CONVICTION_MAX_CHARS: z.coerce.number().int().positive().default(600),
     WALLET_DAILY_INTERPRETATIONS: z.coerce.number().int().nonnegative().default(20),
     // Local testing only: approves every registry instrument with a fake mint, so the journey can be
-    // walked end to end before spike S1 approves real ones. Refused in production.
+    // walked end to end before real ones are approved. Refused in production.
     DEV_APPROVE_DEMO_INSTRUMENTS: z
       .enum(['true', 'false'])
       .default('false')

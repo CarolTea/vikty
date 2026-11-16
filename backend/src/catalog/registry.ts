@@ -3,8 +3,8 @@ import type { Instrument } from './instruments.js';
 // Curated from the victylp demo catalog (2026-10-06.v2). Matching metadata (themes, exposures,
 // region, risk tags) came from there; prices did not: they come from Jupiter.
 //
-// Only USDC is approved: its mint is confirmed. Everything else is 'unavailable' until spike S1
-// confirms its mint, decimals and token program, someone reviews the evidence, and buy and sell
+// Only USDC is approved: its mint is confirmed. Everything else is 'unavailable' until we
+// confirm its mint, decimals and token program, someone reviews the evidence, and buy and sell
 // are checked for the planned amounts (PRD §10.3). Approving one means filling mint, decimals and
 // evidence and changing its status here; test/catalog.test.ts refuses an approval without them.
 export const registry: readonly Instrument[] = [

@@ -96,6 +96,23 @@ export const migrations: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: '005_events',
+    sql: `
+      -- Funnel events. Owner is pseudonymous (hashes); props never carry the conviction text or a
+      -- wallet address.
+      CREATE TABLE events (
+        id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        name         text NOT NULL,
+        occurred_at  timestamptz NOT NULL,
+        received_at  timestamptz NOT NULL DEFAULT now(),
+        props        jsonb NOT NULL,
+        session_hash text NOT NULL,
+        wallet_hash  text
+      );
+      CREATE INDEX events_name_occurred_at ON events (name, occurred_at);
+    `,
+  },
 ];
 
 // Runs at startup, before the server listens. Each migration and its bookkeeping row go in one

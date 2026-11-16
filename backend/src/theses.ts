@@ -2,7 +2,7 @@ import type { Catalog } from './catalog/instruments.js';
 import type { InterpretationContent } from './interpretations.js';
 import type { Composition } from './proposals.js';
 
-// Suggested theses: curated ahead of time, so choosing one costs no AI call and no quota (E1 rule 1).
+// Suggested theses: curated ahead of time, so choosing one costs no AI call and no quota.
 export interface SuggestedThesis {
   id: string;
   title: string;
@@ -15,7 +15,7 @@ export interface SuggestedThesis {
 }
 
 // Placeholder taken from the examples in Docs/api/openapi.yaml. The real list depends on what the
-// catalog can represent (spike S1) and replaces this one when that is decided.
+// catalog can represent and replaces this one when the catalog is decided.
 export const suggestedTheses: SuggestedThesis[] = [
   {
     id: 'th_ai_infra',

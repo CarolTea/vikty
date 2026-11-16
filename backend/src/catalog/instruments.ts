@@ -37,7 +37,7 @@ export interface Instrument {
   id: string;
   symbol: string;
   name: string;
-  // Null until confirmed on-chain (spike S1). An instrument without a mint is never approved.
+  // Null until confirmed on-chain. An instrument without a mint is never approved.
   mint: string | null;
   decimals: number | null;
   kind: InstrumentKind;
