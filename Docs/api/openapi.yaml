@@ -14,6 +14,7 @@ info:
       Campos que vêm da Jupiter estão marcados *(Jupiter)*; o mapeamento exato é confirmado quando a
       integração for validada.
     - **Status:** rascunho de 2026-09-23.
+    - **Exemplos:** dados fictícios, numa história só (tese de energia → `int_9a2` → `prop_5c8` → `plan_7d1` → `op_3f9`). Preços, mints dos ativos e assinaturas dos exemplos não são reais.
 
     ## Wallet e login: Privy
 
@@ -116,6 +117,7 @@ info:
     | 422 | `INSUFFICIENT_BALANCE` | Saldo real abaixo do necessário; `details.available` |
     | 422 | `TRANSACTION_REJECTED` | A transação falhou na verificação do backend; não se pede assinatura |
     | 429 | `RATE_LIMITED` | Muitas requisições; `retryAfter` em segundos (também no header `Retry-After`) |
+    | 500 | `INTERNAL_ERROR` | Erro inesperado do nosso lado; mensagem genérica, sem detalhes internos. Qualquer rota |
     | 503 | `AI_UNAVAILABLE` | IA fora, ou resposta dela reprovada nas verificações do backend; o front oferece tentar de novo ou usar uma tese sugerida |
     | 503 | `UPSTREAM_UNAVAILABLE` | Jupiter, RPC, Privy ou Turnstile fora ou em timeout |
 
@@ -335,7 +337,7 @@ paths:
               textoLivre:
                 value:
                   source: free_text
-                  text: AI will reshape data center infrastructure over the next 5 years, but I don't want to depend on a single company.
+                  text: I believe AI will increase demand for energy, but I want nothing tied to fossil fuels.
                   botCheckToken: 0.turnstile-token-exemplo
                   deviceHash: 9f2c1e7ab3
               teseSugerida:
@@ -354,25 +356,32 @@ paths:
                 id: int_9a2
                 source: free_text
                 curated: false
-                summary: Growing demand for physical AI infrastructure.
+                summary: Growing electricity demand driven by AI data centers.
                 exposures:
-                  - { id: exp_semis_ai, label: AI semiconductors }
-                  - { id: exp_datacenter, label: Data centers }
+                  - id: exp_power
+                    label: Power generation
+                  - id: exp_grid
+                    label: Grid and utilities
                 exclusions:
-                  - { id: exc_1, label: Don't depend on a single company }
+                  - id: exc_1
+                    label: Nothing tied to fossil fuels
                 restrictions: []
                 ambiguities:
                   - id: amb_1
-                    question: Should energy for data centers be part of the thesis?
+                    question: Should nuclear power and uranium be part of the thesis?
                     material: true
                     options:
-                      - { id: 'yes', label: 'Yes, include it' }
-                      - { id: 'no', label: 'No, compute only' }
+                      - id: yes
+                        label: Yes, include it
+                      - id: no
+                        label: No, other sources only
                     answer: null
                 representation: sufficient
                 limitations: []
                 status: needs_clarification
-                quota: { anonymousFreeUsed: true, wallet: null }
+                quota:
+                  anonymousFreeUsed: true
+                  wallet: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -406,6 +415,36 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Interpretation' }
+              example:
+                id: int_9a2
+                source: free_text
+                curated: false
+                summary: Growing electricity demand driven by AI data centers.
+                exposures:
+                  - id: exp_power
+                    label: Power generation
+                  - id: exp_grid
+                    label: Grid and utilities
+                exclusions:
+                  - id: exc_1
+                    label: Nothing tied to fossil fuels
+                restrictions: []
+                ambiguities:
+                  - id: amb_1
+                    question: Should nuclear power and uranium be part of the thesis?
+                    material: true
+                    options:
+                      - id: yes
+                        label: Yes, include it
+                      - id: no
+                        label: No, other sources only
+                    answer: null
+                representation: sufficient
+                limitations: []
+                status: needs_clarification
+                quota:
+                  anonymousFreeUsed: true
+                  wallet: null
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
       operationId: updateInterpretation
@@ -433,8 +472,6 @@ paths:
             schema: { $ref: '#/components/schemas/InterpretationPatch' }
             example:
               answers: [{ ambiguityId: amb_1, optionId: 'yes' }]
-              removeExposureIds: [exp_datacenter]
-              addExclusions: [Nothing tied to fossil fuels]
               addRestrictions: [Max 30% per asset]
       responses:
         '200':
@@ -442,6 +479,40 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Interpretation' }
+              example:
+                id: int_9a2
+                source: free_text
+                curated: false
+                summary: Growing electricity demand driven by AI data centers.
+                exposures:
+                  - id: exp_power
+                    label: Power generation
+                  - id: exp_grid
+                    label: Grid and utilities
+                  - id: exp_nuclear
+                    label: Nuclear and uranium
+                exclusions:
+                  - id: exc_1
+                    label: Nothing tied to fossil fuels
+                restrictions:
+                  - id: res_1
+                    label: Max 30% per asset
+                ambiguities:
+                  - id: amb_1
+                    question: Should nuclear power and uranium be part of the thesis?
+                    material: true
+                    options:
+                      - id: yes
+                        label: Yes, include it
+                      - id: no
+                        label: No, other sources only
+                    answer: yes
+                representation: sufficient
+                limitations: []
+                status: ready
+                quota:
+                  anonymousFreeUsed: true
+                  wallet: null
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
@@ -498,6 +569,101 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Proposal' }
+              example:
+                id: prop_5c8
+                interpretationId: int_9a2
+                curated: false
+                budgetUsdc: "500.00"
+                items:
+                  - instrument:
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_power
+                    weightBps: 3500
+                    plannedUsdc: "175.00"
+                    rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Power prices and regulation can change quickly.
+                    availability: &a1
+                      buy: available
+                      sell: available
+                      checkedAt: 2026-09-23T14:05:00Z
+                    state: active
+                  - instrument:
+                      id: ins_nukex
+                      symbol: NUKE-X
+                      name: Nuclear & Uranium Exposure
+                      mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Nuclear and uranium
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_nuclear
+                    weightBps: 3000
+                    plannedUsdc: "150.00"
+                    rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Concentrated in a few producers.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_gridx
+                      symbol: GRID-X
+                      name: Grid & Utilities Basket
+                      mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Grid and utilities
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_grid
+                    weightBps: 2000
+                    plannedUsdc: "100.00"
+                    rationale: Utilities and grid builders that carry the extra load of new data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Returns depend on regulated rates.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_usdc
+                      symbol: USDC
+                      name: USD Coin
+                      mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                      decimals: 6
+                      kind: cash
+                      status: approved
+                      exposureLabel: Cash in USDC
+                      issuerName: Circle
+                    exposureIds: []
+                    weightBps: 1500
+                    plannedUsdc: "75.00"
+                    rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                    risks:
+                      - Stablecoin value depends on its issuer reserves.
+                    availability: *a1
+                    state: active
+                validation:
+                  valid: true
+                  conclusive: true
+                  totalBps: 10000
+                  issues: []
+                  policyVersion: 2026-09-01
+                limitations:
+                  - Prices and availability change until you confirm each purchase.
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
@@ -530,6 +696,101 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Proposal' }
+              example:
+                id: prop_5c8
+                interpretationId: int_9a2
+                curated: false
+                budgetUsdc: "500.00"
+                items:
+                  - instrument:
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_power
+                    weightBps: 3500
+                    plannedUsdc: "175.00"
+                    rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Power prices and regulation can change quickly.
+                    availability: &a1
+                      buy: available
+                      sell: available
+                      checkedAt: 2026-09-23T14:05:00Z
+                    state: active
+                  - instrument:
+                      id: ins_nukex
+                      symbol: NUKE-X
+                      name: Nuclear & Uranium Exposure
+                      mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Nuclear and uranium
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_nuclear
+                    weightBps: 3000
+                    plannedUsdc: "150.00"
+                    rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Concentrated in a few producers.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_gridx
+                      symbol: GRID-X
+                      name: Grid & Utilities Basket
+                      mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Grid and utilities
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_grid
+                    weightBps: 2000
+                    plannedUsdc: "100.00"
+                    rationale: Utilities and grid builders that carry the extra load of new data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Returns depend on regulated rates.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_usdc
+                      symbol: USDC
+                      name: USD Coin
+                      mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                      decimals: 6
+                      kind: cash
+                      status: approved
+                      exposureLabel: Cash in USDC
+                      issuerName: Circle
+                    exposureIds: []
+                    weightBps: 1500
+                    plannedUsdc: "75.00"
+                    rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                    risks:
+                      - Stablecoin value depends on its issuer reserves.
+                    availability: *a1
+                    state: active
+                validation:
+                  valid: true
+                  conclusive: true
+                  totalBps: 10000
+                  issues: []
+                  policyVersion: 2026-09-01
+                limitations:
+                  - Prices and availability change until you confirm each purchase.
         '404': { $ref: '#/components/responses/NotFound' }
 
   /proposals/{id}/validations:
@@ -557,9 +818,9 @@ paths:
             example:
               budgetUsdc: '500.00'
               items:
-                - { instrumentId: ins_semix, weightBps: 3500, state: active }
-                - { instrumentId: ins_dcx, weightBps: 0, state: rejected }
-                - { instrumentId: ins_pwre, weightBps: 2000, state: active }
+                - { instrumentId: ins_pwre, weightBps: 3500, state: active }
+                - { instrumentId: ins_nukex, weightBps: 3000, state: active }
+                - { instrumentId: ins_gridx, weightBps: 2000, state: active }
                 - { instrumentId: ins_usdc, weightBps: 1500, state: active }
       responses:
         '200':
@@ -574,6 +835,156 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/ProposalItem' }
+              examples:
+                valido:
+                  summary: Rascunho válido
+                  value:
+                    validation:
+                      valid: true
+                      conclusive: true
+                      totalBps: 10000
+                      issues: []
+                      policyVersion: 2026-09-01
+                    items:
+                      - instrument: &a2
+                          id: ins_pwre
+                          symbol: PWR-E
+                          name: Power Generation Basket
+                          mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Power generation
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_power
+                        weightBps: 3500
+                        plannedUsdc: "175.00"
+                        rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Power prices and regulation can change quickly.
+                        availability: &a1
+                          buy: available
+                          sell: available
+                          checkedAt: 2026-09-23T14:05:00Z
+                        state: active
+                      - instrument: &a3
+                          id: ins_nukex
+                          symbol: NUKE-X
+                          name: Nuclear & Uranium Exposure
+                          mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Nuclear and uranium
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_nuclear
+                        weightBps: 3000
+                        plannedUsdc: "150.00"
+                        rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Concentrated in a few producers.
+                        availability: *a1
+                        state: active
+                      - instrument: &a4
+                          id: ins_gridx
+                          symbol: GRID-X
+                          name: Grid & Utilities Basket
+                          mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Grid and utilities
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_grid
+                        weightBps: 2000
+                        plannedUsdc: "100.00"
+                        rationale: Utilities and grid builders that carry the extra load of new data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Returns depend on regulated rates.
+                        availability: *a1
+                        state: active
+                      - instrument: &a5
+                          id: ins_usdc
+                          symbol: USDC
+                          name: USD Coin
+                          mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                          decimals: 6
+                          kind: cash
+                          status: approved
+                          exposureLabel: Cash in USDC
+                          issuerName: Circle
+                        exposureIds: []
+                        weightBps: 1500
+                        plannedUsdc: "75.00"
+                        rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                        risks:
+                          - Stablecoin value depends on its issuer reserves.
+                        availability: *a1
+                        state: active
+                somaErrada:
+                  summary: Pesos não somam 100%
+                  value:
+                    validation:
+                      valid: false
+                      conclusive: true
+                      totalBps: 9000
+                      issues:
+                        - code: SUM_NOT_100
+                          severity: error
+                          instrumentId: null
+                          message: Weights must add up to 100%.
+                          params:
+                            totalBps: 9000
+                      policyVersion: 2026-09-01
+                    items:
+                      - instrument: *a2
+                        exposureIds:
+                          - exp_power
+                        weightBps: 3500
+                        plannedUsdc: "175.00"
+                        rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Power prices and regulation can change quickly.
+                        availability: *a1
+                        state: active
+                      - instrument: *a3
+                        exposureIds:
+                          - exp_nuclear
+                        weightBps: 3000
+                        plannedUsdc: "150.00"
+                        rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Concentrated in a few producers.
+                        availability: *a1
+                        state: active
+                      - instrument: *a4
+                        exposureIds:
+                          - exp_grid
+                        weightBps: 2000
+                        plannedUsdc: "100.00"
+                        rationale: Utilities and grid builders that carry the extra load of new data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Returns depend on regulated rates.
+                        availability: *a1
+                        state: active
+                      - instrument: *a5
+                        exposureIds: []
+                        weightBps: 500
+                        plannedUsdc: "25.00"
+                        rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                        risks:
+                          - Stablecoin value depends on its issuer reserves.
+                        availability: *a1
+                        state: active
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -602,7 +1013,7 @@ paths:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ExplanationInput' }
-            example: { question: Why is this asset here?, instrumentId: ins_semix, botCheckToken: 0.turnstile-token-exemplo }
+            example: { question: Why is this asset here?, instrumentId: ins_pwre, botCheckToken: 0.turnstile-token-exemplo }
       responses:
         '200':
           description: Explicação
@@ -610,7 +1021,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Explanation' }
               example:
-                explanation: SEMI-X represents AI chip demand, the first exposure of your thesis. It carries most of the weight because it is the most direct representation in the catalog.
+                explanation: PWR-E represents electricity generation, the first exposure of your thesis. It carries the largest weight because it is the most direct representation in the catalog.
                 limitations: [It is a tokenized product, not direct ownership of the shares.]
                 remaining: 4
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -640,6 +1051,44 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/InstrumentDetail' }
+              example:
+                instrument:
+                  id: ins_pwre
+                  symbol: PWR-E
+                  name: Power Generation Basket
+                  mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                  decimals: 6
+                  kind: token
+                  status: approved
+                  exposureLabel: Power generation
+                  issuerName: Meridian Tokenized Assets (fictional)
+                represents: A basket of listed electricity generation companies, issued as a token on Solana.
+                issuer:
+                  name: Meridian Tokenized Assets (fictional)
+                  nature: Tokenized-asset issuer
+                economicRights:
+                  - Value follows the underlying basket.
+                  - No voting rights over the underlying shares.
+                limitations:
+                  - It is a tokenized product, not direct ownership of the shares.
+                  - Trading follows the availability of the underlying market.
+                risks:
+                  - Power prices and regulation can change quickly.
+                  - The issuer may suspend minting or redemption.
+                costs:
+                  - Platform fee of about 0.05% per swap.
+                  - Network fee paid in SOL.
+                howToTrade: Swap USDC for PWR-E and back, through a route the app finds when you review each operation.
+                availability:
+                  buy: available
+                  sell: available
+                  checkedAt: 2026-09-23T14:05:00Z
+                evidence:
+                  - label: Issuer fact sheet (placeholder)
+                    url: https://example.com/pwr-e/fact-sheet
+                    reviewedAt: 2026-09-15
+                eligibilityNotes:
+                  - May not be available in some regions.
         '404': { $ref: '#/components/responses/NotFound' }
 
   /wallet/balances:
@@ -656,6 +1105,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Balances' }
+              example:
+                wallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                network: solana-mainnet
+                fetchedAt: 2026-09-23T14:19:00Z
+                sol:
+                  quantity: "0.84"
+                  suggestedFeeReserve: "0.01"
+                tokens:
+                  - mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                    instrumentId: ins_usdc
+                    symbol: USDC
+                    quantity: "500.00"
+                    decimals: 6
+                    inCatalog: true
+                  - mint: OddT3Rk8Wn5YbQe2HcVx7ZpGa4MuJd9LsFtCy6NhB1Ae
+                    instrumentId: null
+                    symbol: null
+                    quantity: "12000.50"
+                    decimals: 5
+                    inCatalog: false
         '401': { $ref: '#/components/responses/Unauthorized' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
@@ -681,6 +1150,22 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/PlanSummary' }
+              example:
+                items:
+                  - id: plan_7d1
+                    status: active
+                    version: 1
+                    budgetUsdc: "500.00"
+                    interpretationSummary: Growing electricity demand driven by AI data centers.
+                    createdAt: 2026-09-23T14:10:00Z
+                    updatedAt: 2026-09-23T14:15:00Z
+                  - id: plan_a20
+                    status: draft
+                    version: 1
+                    budgetUsdc: "200.00"
+                    interpretationSummary: Rising demand for AI semiconductors.
+                    createdAt: 2026-09-22T09:00:00Z
+                    updatedAt: 2026-09-22T09:00:00Z
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       operationId: createPlan
@@ -706,6 +1191,104 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Plan' }
+              example:
+                id: plan_7d1
+                proposalId: prop_5c8
+                interpretationSummary: Growing electricity demand driven by AI data centers.
+                status: draft
+                version: 1
+                budgetUsdc: "500.00"
+                items:
+                  - instrument:
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_power
+                    weightBps: 3500
+                    plannedUsdc: "175.00"
+                    rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Power prices and regulation can change quickly.
+                    availability: &a1
+                      buy: available
+                      sell: available
+                      checkedAt: 2026-09-23T14:05:00Z
+                    state: active
+                  - instrument:
+                      id: ins_nukex
+                      symbol: NUKE-X
+                      name: Nuclear & Uranium Exposure
+                      mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Nuclear and uranium
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_nuclear
+                    weightBps: 3000
+                    plannedUsdc: "150.00"
+                    rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Concentrated in a few producers.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_gridx
+                      symbol: GRID-X
+                      name: Grid & Utilities Basket
+                      mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Grid and utilities
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_grid
+                    weightBps: 2000
+                    plannedUsdc: "100.00"
+                    rationale: Utilities and grid builders that carry the extra load of new data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Returns depend on regulated rates.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_usdc
+                      symbol: USDC
+                      name: USD Coin
+                      mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                      decimals: 6
+                      kind: cash
+                      status: approved
+                      exposureLabel: Cash in USDC
+                      issuerName: Circle
+                    exposureIds: []
+                    weightBps: 1500
+                    plannedUsdc: "75.00"
+                    rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                    risks:
+                      - Stablecoin value depends on its issuer reserves.
+                    availability: *a1
+                    state: active
+                validation:
+                  valid: true
+                  conclusive: true
+                  totalBps: 10000
+                  issues: []
+                  policyVersion: 2026-09-01
+                trackedMints: []
+                createdAt: 2026-09-23T14:10:00Z
+                updatedAt: 2026-09-23T14:10:00Z
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -727,6 +1310,125 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Plan' }
+              examples:
+                ativo:
+                  summary: Plano ativo
+                  value:
+                    id: plan_7d1
+                    proposalId: prop_5c8
+                    interpretationSummary: Growing electricity demand driven by AI data centers.
+                    status: active
+                    version: 1
+                    budgetUsdc: "500.00"
+                    items: &a2
+                      - instrument:
+                          id: ins_pwre
+                          symbol: PWR-E
+                          name: Power Generation Basket
+                          mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Power generation
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_power
+                        weightBps: 3500
+                        plannedUsdc: "175.00"
+                        rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Power prices and regulation can change quickly.
+                        availability: &a1
+                          buy: available
+                          sell: available
+                          checkedAt: 2026-09-23T14:05:00Z
+                        state: active
+                      - instrument:
+                          id: ins_nukex
+                          symbol: NUKE-X
+                          name: Nuclear & Uranium Exposure
+                          mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Nuclear and uranium
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_nuclear
+                        weightBps: 3000
+                        plannedUsdc: "150.00"
+                        rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Concentrated in a few producers.
+                        availability: *a1
+                        state: active
+                      - instrument:
+                          id: ins_gridx
+                          symbol: GRID-X
+                          name: Grid & Utilities Basket
+                          mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Grid and utilities
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        exposureIds:
+                          - exp_grid
+                        weightBps: 2000
+                        plannedUsdc: "100.00"
+                        rationale: Utilities and grid builders that carry the extra load of new data centers.
+                        risks:
+                          - It is a tokenized product, not direct ownership of the shares.
+                          - Returns depend on regulated rates.
+                        availability: *a1
+                        state: active
+                      - instrument:
+                          id: ins_usdc
+                          symbol: USDC
+                          name: USD Coin
+                          mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                          decimals: 6
+                          kind: cash
+                          status: approved
+                          exposureLabel: Cash in USDC
+                          issuerName: Circle
+                        exposureIds: []
+                        weightBps: 1500
+                        plannedUsdc: "75.00"
+                        rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                        risks:
+                          - Stablecoin value depends on its issuer reserves.
+                        availability: *a1
+                        state: active
+                    validation: &a3
+                      valid: true
+                      conclusive: true
+                      totalBps: 10000
+                      issues: []
+                      policyVersion: 2026-09-01
+                    trackedMints:
+                      - PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      - NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      - GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                    createdAt: 2026-09-23T14:10:00Z
+                    updatedAt: 2026-09-23T14:15:00Z
+                rascunho:
+                  summary: Plano em rascunho
+                  value:
+                    id: plan_7d1
+                    proposalId: prop_5c8
+                    interpretationSummary: Growing electricity demand driven by AI data centers.
+                    status: draft
+                    version: 1
+                    budgetUsdc: "500.00"
+                    items: *a2
+                    validation: *a3
+                    trackedMints: []
+                    createdAt: 2026-09-23T14:10:00Z
+                    updatedAt: 2026-09-23T14:10:00Z
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
     put:
@@ -759,6 +1461,108 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Plan' }
+              example:
+                id: plan_7d1
+                proposalId: prop_5c8
+                interpretationSummary: Growing electricity demand driven by AI data centers.
+                status: active
+                version: 2
+                budgetUsdc: "600.00"
+                items:
+                  - instrument:
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_power
+                    weightBps: 3500
+                    plannedUsdc: "210.00"
+                    rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Power prices and regulation can change quickly.
+                    availability: &a1
+                      buy: available
+                      sell: available
+                      checkedAt: 2026-09-23T14:05:00Z
+                    state: active
+                  - instrument:
+                      id: ins_nukex
+                      symbol: NUKE-X
+                      name: Nuclear & Uranium Exposure
+                      mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Nuclear and uranium
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_nuclear
+                    weightBps: 3000
+                    plannedUsdc: "180.00"
+                    rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Concentrated in a few producers.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_gridx
+                      symbol: GRID-X
+                      name: Grid & Utilities Basket
+                      mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Grid and utilities
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_grid
+                    weightBps: 2000
+                    plannedUsdc: "120.00"
+                    rationale: Utilities and grid builders that carry the extra load of new data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Returns depend on regulated rates.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_usdc
+                      symbol: USDC
+                      name: USD Coin
+                      mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                      decimals: 6
+                      kind: cash
+                      status: approved
+                      exposureLabel: Cash in USDC
+                      issuerName: Circle
+                    exposureIds: []
+                    weightBps: 1500
+                    plannedUsdc: "90.00"
+                    rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                    risks:
+                      - Stablecoin value depends on its issuer reserves.
+                    availability: *a1
+                    state: active
+                validation:
+                  valid: true
+                  conclusive: true
+                  totalBps: 10000
+                  issues: []
+                  policyVersion: 2026-09-01
+                trackedMints:
+                  - PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                  - NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                  - GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                  - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                createdAt: 2026-09-23T14:10:00Z
+                updatedAt: 2026-09-23T15:00:00Z
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/Unprocessable' }
@@ -781,13 +1585,115 @@ paths:
         content:
           application/json:
             schema: { $ref: '#/components/schemas/PlanActivation' }
-            example: { status: active, trackedMints: [EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v], confirmPreexistingBalances: true }
+            example: { status: active, trackedMints: [PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1, NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy, GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh, EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v], confirmPreexistingBalances: true }
       responses:
         '200':
           description: Plano ativo
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Plan' }
+              example:
+                id: plan_7d1
+                proposalId: prop_5c8
+                interpretationSummary: Growing electricity demand driven by AI data centers.
+                status: active
+                version: 1
+                budgetUsdc: "500.00"
+                items:
+                  - instrument:
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_power
+                    weightBps: 3500
+                    plannedUsdc: "175.00"
+                    rationale: Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Power prices and regulation can change quickly.
+                    availability: &a1
+                      buy: available
+                      sell: available
+                      checkedAt: 2026-09-23T14:05:00Z
+                    state: active
+                  - instrument:
+                      id: ins_nukex
+                      symbol: NUKE-X
+                      name: Nuclear & Uranium Exposure
+                      mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Nuclear and uranium
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_nuclear
+                    weightBps: 3000
+                    plannedUsdc: "150.00"
+                    rationale: Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Concentrated in a few producers.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_gridx
+                      symbol: GRID-X
+                      name: Grid & Utilities Basket
+                      mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Grid and utilities
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    exposureIds:
+                      - exp_grid
+                    weightBps: 2000
+                    plannedUsdc: "100.00"
+                    rationale: Utilities and grid builders that carry the extra load of new data centers.
+                    risks:
+                      - It is a tokenized product, not direct ownership of the shares.
+                      - Returns depend on regulated rates.
+                    availability: *a1
+                    state: active
+                  - instrument:
+                      id: ins_usdc
+                      symbol: USDC
+                      name: USD Coin
+                      mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                      decimals: 6
+                      kind: cash
+                      status: approved
+                      exposureLabel: Cash in USDC
+                      issuerName: Circle
+                    exposureIds: []
+                    weightBps: 1500
+                    plannedUsdc: "75.00"
+                    rationale: Cash portion that keeps part of your budget stable and ready for future purchases.
+                    risks:
+                      - Stablecoin value depends on its issuer reserves.
+                    availability: *a1
+                    state: active
+                validation:
+                  valid: true
+                  conclusive: true
+                  totalBps: 10000
+                  issues: []
+                  policyVersion: 2026-09-01
+                trackedMints:
+                  - PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                  - NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                  - GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                  - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                createdAt: 2026-09-23T14:10:00Z
+                updatedAt: 2026-09-23T14:15:00Z
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -821,11 +1727,11 @@ paths:
                   sell: '#/components/schemas/SellInput'
             examples:
               compra:
-                value: { planId: plan_7d1, side: buy, instrumentId: ins_semix, inputUsdc: '175.00' }
+                value: { planId: plan_7d1, side: buy, instrumentId: ins_pwre, inputUsdc: '175.00' }
               vendaPorQuantidade:
-                value: { planId: plan_7d1, side: sell, instrumentId: ins_semix, quantity: '0.52' }
+                value: { planId: plan_7d1, side: sell, instrumentId: ins_pwre, quantity: '0.52' }
               vendaPorPercentual:
-                value: { planId: plan_7d1, side: sell, instrumentId: ins_semix, percentBps: 5000 }
+                value: { planId: plan_7d1, side: sell, instrumentId: ins_pwre, percentBps: 5000 }
       responses:
         '201':
           description: |
@@ -838,6 +1744,87 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
+              examples:
+                compra:
+                  summary: Compra pronta pra revisão
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: &a1
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    status: ready_for_review
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=
+                    result: &a2
+                      signature: null
+                      explorerUrl: null
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:00Z
+                venda:
+                  summary: Venda pronta pra revisão
+                  value:
+                    id: op_8b1
+                    planId: plan_7d1
+                    side: sell
+                    instrument: *a1
+                    status: ready_for_review
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "10.000000"
+                      inputSymbol: PWR-E
+                      estimatedOutput: "88.20"
+                      outputSymbol: USDC
+                      minimumOutput: "87.76"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.04"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T16:01:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 3499
+                        afterBps: 1730
+                    transaction: AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=
+                    result: *a2
+                    createdAt: 2026-09-23T16:00:00Z
+                    updatedAt: 2026-09-23T16:00:00Z
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Unprocessable' }
@@ -869,6 +1856,98 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/Operation' }
+              examples:
+                pendente:
+                  summary: Uma operação pendente
+                  value:
+                    items:
+                      - id: op_3f9
+                        planId: plan_7d1
+                        side: buy
+                        instrument: &a1
+                          id: ins_pwre
+                          symbol: PWR-E
+                          name: Power Generation Basket
+                          mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Power generation
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        status: pending
+                        balanceUpdating: false
+                        review:
+                          inputAmount: "175.00"
+                          inputSymbol: USDC
+                          estimatedOutput: "19.894000"
+                          outputSymbol: PWR-E
+                          minimumOutput: "19.794530"
+                          slippageBps: 50
+                          fees:
+                            - label: Platform fee
+                              amount: "0.09"
+                              symbol: USDC
+                            - label: Network fee
+                              amount: "0.000005"
+                              symbol: SOL
+                          destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                          expiresAt: 2026-09-23T14:21:00Z
+                          planEffect:
+                            targetBps: 3500
+                            currentBps: 0
+                            afterBps: 3500
+                        transaction: null
+                        result:
+                          signature: 5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                          explorerUrl: https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                          inputAmount: null
+                          outputAmount: null
+                          failureReason: null
+                        createdAt: 2026-09-23T14:20:00Z
+                        updatedAt: 2026-09-23T14:20:50Z
+                aguardandoAssinatura:
+                  summary: Aguardando assinatura
+                  value:
+                    items:
+                      - id: op_3f9
+                        planId: plan_7d1
+                        side: buy
+                        instrument: *a1
+                        status: awaiting_signature
+                        balanceUpdating: false
+                        review:
+                          inputAmount: "175.00"
+                          inputSymbol: USDC
+                          estimatedOutput: "19.894000"
+                          outputSymbol: PWR-E
+                          minimumOutput: "19.794530"
+                          slippageBps: 50
+                          fees:
+                            - label: Platform fee
+                              amount: "0.09"
+                              symbol: USDC
+                            - label: Network fee
+                              amount: "0.000005"
+                              symbol: SOL
+                          destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                          expiresAt: 2026-09-23T14:21:00Z
+                          planEffect:
+                            targetBps: 3500
+                            currentBps: 0
+                            afterBps: 3500
+                        transaction: null
+                        result:
+                          signature: null
+                          explorerUrl: null
+                          inputAmount: null
+                          outputAmount: null
+                          failureReason: null
+                        createdAt: 2026-09-23T14:20:00Z
+                        updatedAt: 2026-09-23T14:20:20Z
+                nenhuma:
+                  summary: Nenhuma em andamento
+                  value:
+                    items: []
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /operations/{id}/quotes:
@@ -890,6 +1969,51 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
+              example:
+                id: op_3f9
+                planId: plan_7d1
+                side: buy
+                instrument:
+                  id: ins_pwre
+                  symbol: PWR-E
+                  name: Power Generation Basket
+                  mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                  decimals: 6
+                  kind: token
+                  status: approved
+                  exposureLabel: Power generation
+                  issuerName: Meridian Tokenized Assets (fictional)
+                status: ready_for_review
+                balanceUpdating: false
+                review:
+                  inputAmount: "175.00"
+                  inputSymbol: USDC
+                  estimatedOutput: "19.894000"
+                  outputSymbol: PWR-E
+                  minimumOutput: "19.794530"
+                  slippageBps: 50
+                  fees:
+                    - label: Platform fee
+                      amount: "0.09"
+                      symbol: USDC
+                    - label: Network fee
+                      amount: "0.000005"
+                      symbol: SOL
+                  destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                  expiresAt: 2026-09-23T14:22:00Z
+                  planEffect:
+                    targetBps: 3500
+                    currentBps: 0
+                    afterBps: 3500
+                transaction: AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=
+                result:
+                  signature: null
+                  explorerUrl: null
+                  inputAmount: null
+                  outputAmount: null
+                  failureReason: null
+                createdAt: 2026-09-23T14:20:00Z
+                updatedAt: 2026-09-23T14:21:30Z
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/Unprocessable' }
@@ -920,6 +2044,87 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
+              examples:
+                assinaturaSolicitada:
+                  summary: Assinatura solicitada
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: &a1
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    status: awaiting_signature
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: &a2
+                      signature: null
+                      explorerUrl: null
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:20Z
+                assinaturaRecusada:
+                  summary: Assinatura recusada
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: rejected
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: *a2
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:40Z
         '404': { $ref: '#/components/responses/NotFound' }
 
   /operations/{id}/submissions:
@@ -955,6 +2160,87 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
+              examples:
+                pendente:
+                  summary: Enviada, aguardando confirmação
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: &a1
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    status: pending
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: &a2
+                      signature: 5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      explorerUrl: https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:50Z
+                enviando:
+                  summary: Enviando
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: sending
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: *a2
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:45Z
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -978,6 +2264,215 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Operation' }
+              examples:
+                confirmada:
+                  summary: Confirmada, com valores efetivos
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: &a1
+                      id: ins_pwre
+                      symbol: PWR-E
+                      name: Power Generation Basket
+                      mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                      decimals: 6
+                      kind: token
+                      status: approved
+                      exposureLabel: Power generation
+                      issuerName: Meridian Tokenized Assets (fictional)
+                    status: confirmed
+                    balanceUpdating: false
+                    review: &a2
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: &a3
+                      signature: 5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      explorerUrl: https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      inputAmount: "175.00"
+                      outputAmount: "19.881200"
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:21:10Z
+                confirmadaAtualizandoSaldo:
+                  summary: Confirmada, atualizando saldo
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: confirmed
+                    balanceUpdating: true
+                    review: *a2
+                    transaction: null
+                    result: *a3
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:21:10Z
+                pendente:
+                  summary: Pendente
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: pending
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result:
+                      signature: 5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      explorerUrl: https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:50Z
+                aguardandoAssinatura:
+                  summary: Aguardando assinatura
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: awaiting_signature
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result: &a4
+                      signature: null
+                      explorerUrl: null
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: null
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:20Z
+                pronta:
+                  summary: Pronta pra revisão
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: ready_for_review
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=
+                    result: *a4
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:20:00Z
+                falhou:
+                  summary: Falhou
+                  value:
+                    id: op_3f9
+                    planId: plan_7d1
+                    side: buy
+                    instrument: *a1
+                    status: failed
+                    balanceUpdating: false
+                    review:
+                      inputAmount: "175.00"
+                      inputSymbol: USDC
+                      estimatedOutput: "19.894000"
+                      outputSymbol: PWR-E
+                      minimumOutput: "19.794530"
+                      slippageBps: 50
+                      fees:
+                        - label: Platform fee
+                          amount: "0.09"
+                          symbol: USDC
+                        - label: Network fee
+                          amount: "0.000005"
+                          symbol: SOL
+                      destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      expiresAt: 2026-09-23T14:21:00Z
+                      planEffect:
+                        targetBps: 3500
+                        currentBps: 0
+                        afterBps: 3500
+                    transaction: null
+                    result:
+                      signature: null
+                      explorerUrl: null
+                      inputAmount: null
+                      outputAmount: null
+                      failureReason: The transaction did not go through. Nothing was spent.
+                    createdAt: 2026-09-23T14:20:00Z
+                    updatedAt: 2026-09-23T14:21:10Z
         '404': { $ref: '#/components/responses/NotFound' }
 
   /plans/{id}/position:
@@ -1000,6 +2495,195 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Position' }
+              examples:
+                completa:
+                  summary: Posição completa
+                  value:
+                    planId: plan_7d1
+                    planVersion: 1
+                    updatedAt: 2026-09-23T14:25:00Z
+                    composition:
+                      available: true
+                      reason: null
+                    totals:
+                      knownValueUsd: "499.95"
+                      complete: true
+                      pendingPlannedUsdc: "250.00"
+                    items:
+                      - instrument: &a1
+                          id: ins_pwre
+                          symbol: PWR-E
+                          name: Power Generation Basket
+                          mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Power generation
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        state: active
+                        quantity: "19.881200"
+                        price:
+                          usd: "8.80"
+                          observedAt: 2026-09-23T14:25:00Z
+                          valid: true
+                        valuationUsd: "174.95"
+                        targetBps: 3500
+                        currentBps: 3499
+                        diffBps: -1
+                        pendingPlannedUsdc: "0.00"
+                        cost: &a2
+                          known: true
+                          averageUsd: "8.80"
+                        resultUsd: "-0.05"
+                        balanceUpdating: false
+                      - instrument: &a3
+                          id: ins_nukex
+                          symbol: NUKE-X
+                          name: Nuclear & Uranium Exposure
+                          mint: NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Nuclear and uranium
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        state: active
+                        quantity: "0"
+                        price: &a4
+                          usd: "12.40"
+                          observedAt: 2026-09-23T14:25:00Z
+                          valid: true
+                        valuationUsd: "0.00"
+                        targetBps: 3000
+                        currentBps: 0
+                        diffBps: -3000
+                        pendingPlannedUsdc: "150.00"
+                        cost: &a5
+                          known: true
+                          averageUsd: null
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                      - instrument: &a6
+                          id: ins_gridx
+                          symbol: GRID-X
+                          name: Grid & Utilities Basket
+                          mint: GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh
+                          decimals: 6
+                          kind: token
+                          status: approved
+                          exposureLabel: Grid and utilities
+                          issuerName: Meridian Tokenized Assets (fictional)
+                        state: active
+                        quantity: "0"
+                        price: &a7
+                          usd: "6.10"
+                          observedAt: 2026-09-23T14:25:00Z
+                          valid: true
+                        valuationUsd: "0.00"
+                        targetBps: 2000
+                        currentBps: 0
+                        diffBps: -2000
+                        pendingPlannedUsdc: "100.00"
+                        cost: &a8
+                          known: true
+                          averageUsd: null
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                      - instrument: &a9
+                          id: ins_usdc
+                          symbol: USDC
+                          name: USD Coin
+                          mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                          decimals: 6
+                          kind: cash
+                          status: approved
+                          exposureLabel: Cash in USDC
+                          issuerName: Circle
+                        state: active
+                        quantity: "325.00"
+                        price: &a10
+                          usd: "1.00"
+                          observedAt: 2026-09-23T14:25:00Z
+                          valid: true
+                        valuationUsd: "325.00"
+                        targetBps: 1500
+                        currentBps: 6501
+                        diffBps: 5001
+                        pendingPlannedUsdc: "0.00"
+                        cost: &a11
+                          known: true
+                          averageUsd: "1.00"
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                    limitations: []
+                semPreco:
+                  summary: Preço ausente
+                  value:
+                    planId: plan_7d1
+                    planVersion: 1
+                    updatedAt: 2026-09-23T14:25:00Z
+                    composition:
+                      available: false
+                      reason: The price of PWR-E is missing, so the composition cannot be shown.
+                    totals:
+                      knownValueUsd: "325.00"
+                      complete: false
+                      pendingPlannedUsdc: "250.00"
+                    items:
+                      - instrument: *a1
+                        state: active
+                        quantity: "19.881200"
+                        price:
+                          usd: null
+                          observedAt: null
+                          valid: false
+                        valuationUsd: null
+                        targetBps: 3500
+                        currentBps: null
+                        diffBps: null
+                        pendingPlannedUsdc: "0.00"
+                        cost: *a2
+                        resultUsd: null
+                        balanceUpdating: false
+                      - instrument: *a3
+                        state: active
+                        quantity: "0"
+                        price: *a4
+                        valuationUsd: "0.00"
+                        targetBps: 3000
+                        currentBps: null
+                        diffBps: null
+                        pendingPlannedUsdc: "150.00"
+                        cost: *a5
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                      - instrument: *a6
+                        state: active
+                        quantity: "0"
+                        price: *a7
+                        valuationUsd: "0.00"
+                        targetBps: 2000
+                        currentBps: null
+                        diffBps: null
+                        pendingPlannedUsdc: "100.00"
+                        cost: *a8
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                      - instrument: *a9
+                        state: active
+                        quantity: "325.00"
+                        price: *a10
+                        valuationUsd: "325.00"
+                        targetBps: 1500
+                        currentBps: null
+                        diffBps: null
+                        pendingPlannedUsdc: "0.00"
+                        cost: *a11
+                        resultUsd: "0.00"
+                        balanceUpdating: false
+                    limitations:
+                      - code: PRICE_MISSING
+                        instrumentId: ins_pwre
+                        message: We could not get a price for PWR-E right now. Its value is left out of the total.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -1027,6 +2711,8 @@ paths:
                 required: [startedAt]
                 properties:
                   startedAt: { type: string, format: date-time }
+              example:
+                startedAt: 2026-09-23T14:30:00Z
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
 
@@ -1057,6 +2743,65 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/ActivityItem' }
                   nextCursor: { type: [string, 'null'] }
+              example:
+                items:
+                  - kind: operation
+                    operation:
+                      id: op_3f9
+                      planId: plan_7d1
+                      side: buy
+                      instrument:
+                        id: ins_pwre
+                        symbol: PWR-E
+                        name: Power Generation Basket
+                        mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                        decimals: 6
+                        kind: token
+                        status: approved
+                        exposureLabel: Power generation
+                        issuerName: Meridian Tokenized Assets (fictional)
+                      status: confirmed
+                      balanceUpdating: false
+                      review:
+                        inputAmount: "175.00"
+                        inputSymbol: USDC
+                        estimatedOutput: "19.894000"
+                        outputSymbol: PWR-E
+                        minimumOutput: "19.794530"
+                        slippageBps: 50
+                        fees:
+                          - label: Platform fee
+                            amount: "0.09"
+                            symbol: USDC
+                          - label: Network fee
+                            amount: "0.000005"
+                            symbol: SOL
+                        destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                        expiresAt: 2026-09-23T14:21:00Z
+                        planEffect:
+                          targetBps: 3500
+                          currentBps: 0
+                          afterBps: 3500
+                      transaction: null
+                      result:
+                        signature: 5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                        explorerUrl: https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe
+                        inputAmount: "175.00"
+                        outputAmount: "19.881200"
+                        failureReason: null
+                      createdAt: 2026-09-23T14:20:00Z
+                      updatedAt: 2026-09-23T14:21:10Z
+                  - kind: external_movement
+                    id: mov_1a4
+                    mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+                    symbol: USDC
+                    direction: in
+                    quantity: "500.00"
+                    signature: 3Fh9PqLdKw2XcYt8VbNa5ReUm7ZgJs4TxHnC6DyEoAk1QiWz9BvMuSf2LpGr8KaTe5NjXc3YdHq7VwRb4ZmUs6Pt
+                    explorerUrl: https://solscan.io/tx/3Fh9PqLdKw2XcYt8VbNa5ReUm7ZgJs4TxHnC6DyEoAk1QiWz9BvMuSf2LpGr8KaTe5NjXc3YdHq7VwRb4ZmUs6Pt
+                    classification: deposit
+                    observedAt: 2026-09-23T13:40:00Z
+                nextCursor: null
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /events:
@@ -1149,6 +2894,12 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: UNAUTHENTICATED
+              message: Connect your wallet to continue.
+              retryAfter: null
+              details: {}
     Forbidden:
       description: '`ANON_QUOTA_USED` · `WALLET_QUOTA_USED` · `EXPLANATIONS_USED` · `BOT_CHECK_FAILED` · `WALLET_MISMATCH`'
       content:
@@ -1161,16 +2912,154 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error:
+              code: NOT_FOUND
+              message: We couldn't find that.
+              retryAfter: null
+              details: {}
     Conflict:
       description: '`IDEMPOTENCY_CONFLICT` · `OPERATION_IN_PROGRESS` · `QUOTE_EXPIRED` · `MATERIAL_CHANGE`'
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            operacaoEmAndamento:
+              summary: Já existe operação ativa
+              value:
+                error:
+                  code: OPERATION_IN_PROGRESS
+                  message: You already have an operation in progress for this asset.
+                  retryAfter: null
+                  details:
+                    operationId: op_3f9
+            cotacaoExpirada:
+              summary: Cotação vencida
+              value:
+                error:
+                  code: QUOTE_EXPIRED
+                  message: This quote expired. Get a new one to continue.
+                  retryAfter: null
+                  details: {}
+            idempotencia:
+              summary: Mesma chave, corpo diferente
+              value:
+                error:
+                  code: IDEMPOTENCY_CONFLICT
+                  message: This request was already sent with different values.
+                  retryAfter: null
+                  details: {}
+            mudancaRelevante:
+              summary: Nova cotação mudou de forma relevante
+              value:
+                error:
+                  code: MATERIAL_CHANGE
+                  message: The price changed. Review the new quote before continuing.
+                  retryAfter: null
+                  details:
+                    operation:
+                      id: op_3f9
+                      planId: plan_7d1
+                      side: buy
+                      instrument:
+                        id: ins_pwre
+                        symbol: PWR-E
+                        name: Power Generation Basket
+                        mint: PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1
+                        decimals: 6
+                        kind: token
+                        status: approved
+                        exposureLabel: Power generation
+                        issuerName: Meridian Tokenized Assets (fictional)
+                      status: ready_for_review
+                      balanceUpdating: false
+                      review:
+                        inputAmount: "175.00"
+                        inputSymbol: USDC
+                        estimatedOutput: "19.200000"
+                        outputSymbol: PWR-E
+                        minimumOutput: "19.104000"
+                        slippageBps: 50
+                        fees:
+                          - label: Platform fee
+                            amount: "0.09"
+                            symbol: USDC
+                          - label: Network fee
+                            amount: "0.000005"
+                            symbol: SOL
+                        destinationWallet: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                        expiresAt: 2026-09-23T14:22:00Z
+                        planEffect:
+                          targetBps: 3500
+                          currentBps: 0
+                          afterBps: 3500
+                      transaction: AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=
+                      result:
+                        signature: null
+                        explorerUrl: null
+                        inputAmount: null
+                        outputAmount: null
+                        failureReason: null
+                      createdAt: 2026-09-23T14:20:00Z
+                      updatedAt: 2026-09-23T14:20:00Z
     Unprocessable:
       description: '`PLAN_INVALID` · `INSTRUMENT_NOT_APPROVED` · `INSTRUMENT_RESTRICTED` · `INSTRUMENT_SUSPENDED` · `NO_ROUTE` · `INSUFFICIENT_BALANCE` · `TRANSACTION_REJECTED`'
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
+          examples:
+            saldoInsuficiente:
+              summary: Saldo abaixo do necessário
+              value:
+                error:
+                  code: INSUFFICIENT_BALANCE
+                  message: You don't have enough USDC for this purchase.
+                  retryAfter: null
+                  details:
+                    available: "120.00"
+            semRota:
+              summary: Sem rota agora
+              value:
+                error:
+                  code: NO_ROUTE
+                  message: No route is available for this swap right now. Try again later.
+                  retryAfter: null
+                  details: {}
+            planoInvalido:
+              summary: Validador reprovou
+              value:
+                error:
+                  code: PLAN_INVALID
+                  message: This plan has problems to fix before it can be saved.
+                  retryAfter: null
+                  details:
+                    validation:
+                      valid: false
+                      conclusive: true
+                      totalBps: 9000
+                      issues:
+                        - code: SUM_NOT_100
+                          severity: error
+                          instrumentId: null
+                          message: Weights must add up to 100%.
+                          params:
+                            totalBps: 9000
+                      policyVersion: 2026-09-01
+            transacaoRejeitada:
+              summary: Transação reprovada pelo backend
+              value:
+                error:
+                  code: TRANSACTION_REJECTED
+                  message: We couldn't verify this transaction, so it was not sent to your wallet.
+                  retryAfter: null
+                  details: {}
+    InternalError:
+      description: '`INTERNAL_ERROR` — erro inesperado, qualquer rota'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: { code: INTERNAL_ERROR, message: 'Something went wrong on our side. Please try again.', retryAfter: null, details: {} }
     TooManyRequests:
       description: '`RATE_LIMITED`'
       headers:
@@ -1187,6 +3076,23 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
 
+          examples:
+            iaIndisponivel:
+              summary: IA fora
+              value:
+                error:
+                  code: AI_UNAVAILABLE
+                  message: We couldn't interpret this right now. Try again or start from a suggested thesis.
+                  retryAfter: null
+                  details: {}
+            upstreamIndisponivel:
+              summary: Jupiter, RPC, Privy ou Turnstile fora
+              value:
+                error:
+                  code: UPSTREAM_UNAVAILABLE
+                  message: A service we depend on is not responding. Try again in a moment.
+                  retryAfter: null
+                  details: {}
   schemas:
     Decimal:
       type: string
@@ -1241,6 +3147,7 @@ components:
                 - RATE_LIMITED
                 - AI_UNAVAILABLE
                 - UPSTREAM_UNAVAILABLE
+                - INTERNAL_ERROR
             message: { type: string, description: 'Mensagem em inglês, pronta pra tela.' }
             retryAfter: { type: [integer, 'null'], description: 'Segundos, quando aplicável.' }
             details: { type: object, additionalProperties: true }
@@ -1383,8 +3290,8 @@ components:
       type: object
       required: [id, symbol, name, mint, decimals, kind, status, exposureLabel, issuerName]
       properties:
-        id: { type: string, example: ins_semix }
-        symbol: { type: string, example: SEMI-X }
+        id: { type: string, example: ins_pwre }
+        symbol: { type: string, example: PWR-E }
         name: { type: string }
         mint: { type: string }
         decimals: { type: integer }
