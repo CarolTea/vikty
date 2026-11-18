@@ -1,0 +1,4985 @@
+{
+  "GET /session": {
+    "200": {
+      "body": {
+        "anonymous": {
+          "freeInterpretationAvailable": true
+        },
+        "wallet": null,
+        "activePlanId": null,
+        "activeOperationIds": [],
+        "limits": {
+          "convictionMaxChars": 600
+        }
+      },
+      "examples": {
+        "anonima": {
+          "anonymous": {
+            "freeInterpretationAvailable": true
+          },
+          "wallet": null,
+          "activePlanId": null,
+          "activeOperationIds": [],
+          "limits": {
+            "convictionMaxChars": 600
+          }
+        },
+        "comWallet": {
+          "anonymous": {
+            "freeInterpretationAvailable": false
+          },
+          "wallet": {
+            "address": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "network": "solana-mainnet",
+            "quota": {
+              "limit": 20,
+              "remaining": 18,
+              "resetsAt": "2026-09-24T00:00:00Z"
+            }
+          },
+          "activePlanId": "plan_7d1",
+          "activeOperationIds": [],
+          "limits": {
+            "convictionMaxChars": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /theses/suggested": {
+    "200": {
+      "body": {
+        "items": [
+          {
+            "id": "th_ai_infra",
+            "title": "AI infrastructure",
+            "summary": "Chips, data centers and the energy that power AI.",
+            "text": "AI will reshape data center infrastructure over the next 5 years."
+          }
+        ]
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /interpretations": {
+    "201": {
+      "body": {
+        "id": "int_9a2",
+        "source": "free_text",
+        "curated": false,
+        "summary": "Growing electricity demand driven by AI data centers.",
+        "exposures": [
+          {
+            "id": "exp_power",
+            "label": "Power generation"
+          },
+          {
+            "id": "exp_grid",
+            "label": "Grid and utilities"
+          }
+        ],
+        "exclusions": [
+          {
+            "id": "exc_1",
+            "label": "Nothing tied to fossil fuels"
+          }
+        ],
+        "restrictions": [],
+        "ambiguities": [
+          {
+            "id": "amb_1",
+            "question": "Should nuclear power and uranium be part of the thesis?",
+            "material": true,
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes, include it"
+              },
+              {
+                "id": "no",
+                "label": "No, other sources only"
+              }
+            ],
+            "answer": null
+          }
+        ],
+        "representation": "sufficient",
+        "limitations": [],
+        "status": "needs_clarification",
+        "quota": {
+          "anonymousFreeUsed": true,
+          "wallet": null
+        }
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "403": {
+      "body": {
+        "error": {
+          "code": "ANON_QUOTA_USED",
+          "message": "You have used your free interpretation. Connect your wallet to interpret again.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "OUT_OF_SCOPE",
+          "message": "We only work with beliefs about the economy. Describe a trend, sector or technology you think will grow.",
+          "details": {
+            "reason": "unrelated"
+          }
+        }
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /interpretations/{id}": {
+    "200": {
+      "body": {
+        "id": "int_9a2",
+        "source": "free_text",
+        "curated": false,
+        "summary": "Growing electricity demand driven by AI data centers.",
+        "exposures": [
+          {
+            "id": "exp_power",
+            "label": "Power generation"
+          },
+          {
+            "id": "exp_grid",
+            "label": "Grid and utilities"
+          }
+        ],
+        "exclusions": [
+          {
+            "id": "exc_1",
+            "label": "Nothing tied to fossil fuels"
+          }
+        ],
+        "restrictions": [],
+        "ambiguities": [
+          {
+            "id": "amb_1",
+            "question": "Should nuclear power and uranium be part of the thesis?",
+            "material": true,
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes, include it"
+              },
+              {
+                "id": "no",
+                "label": "No, other sources only"
+              }
+            ],
+            "answer": null
+          }
+        ],
+        "representation": "sufficient",
+        "limitations": [],
+        "status": "needs_clarification",
+        "quota": {
+          "anonymousFreeUsed": true,
+          "wallet": null
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "PATCH /interpretations/{id}": {
+    "200": {
+      "body": {
+        "id": "int_9a2",
+        "source": "free_text",
+        "curated": false,
+        "summary": "Growing electricity demand driven by AI data centers.",
+        "exposures": [
+          {
+            "id": "exp_power",
+            "label": "Power generation"
+          },
+          {
+            "id": "exp_grid",
+            "label": "Grid and utilities"
+          },
+          {
+            "id": "exp_nuclear",
+            "label": "Nuclear and uranium"
+          }
+        ],
+        "exclusions": [
+          {
+            "id": "exc_1",
+            "label": "Nothing tied to fossil fuels"
+          }
+        ],
+        "restrictions": [
+          {
+            "id": "res_1",
+            "label": "Max 30% per asset"
+          }
+        ],
+        "ambiguities": [
+          {
+            "id": "amb_1",
+            "question": "Should nuclear power and uranium be part of the thesis?",
+            "material": true,
+            "options": [
+              {
+                "id": "yes",
+                "label": "Yes, include it"
+              },
+              {
+                "id": "no",
+                "label": "No, other sources only"
+              }
+            ],
+            "answer": "yes"
+          }
+        ],
+        "representation": "sufficient",
+        "limitations": [],
+        "status": "ready",
+        "quota": {
+          "anonymousFreeUsed": true,
+          "wallet": null
+        }
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INTERPRETATION_CURATED",
+          "message": "Suggested theses can't be edited. Describe your own version to change it.",
+          "details": {
+            "fields": [
+              "removeExposureIds"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "POST /proposals": {
+    "201": {
+      "body": {
+        "id": "prop_5c8",
+        "interpretationId": "int_9a2",
+        "curated": false,
+        "budgetUsdc": "500.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "limitations": [
+          "Prices and availability change until you confirm each purchase."
+        ]
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INTERPRETATION_NOT_READY",
+          "message": "Answer the open questions about your thesis to see a composition.",
+          "details": {
+            "ambiguityIds": [
+              "amb_1"
+            ]
+          }
+        }
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /proposals/{id}": {
+    "200": {
+      "body": {
+        "id": "prop_5c8",
+        "interpretationId": "int_9a2",
+        "curated": false,
+        "budgetUsdc": "500.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "limitations": [
+          "Prices and availability change until you confirm each purchase."
+        ]
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /proposals/{id}/validations": {
+    "200": {
+      "body": {
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ]
+      },
+      "examples": {
+        "valido": {
+          "validation": {
+            "valid": true,
+            "conclusive": true,
+            "totalBps": 10000,
+            "issues": [],
+            "policyVersion": "2026-09-01"
+          },
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_power"
+              ],
+              "weightBps": 3500,
+              "plannedUsdc": "175.00",
+              "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Power prices and regulation can change quickly."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_nuclear"
+              ],
+              "weightBps": 3000,
+              "plannedUsdc": "150.00",
+              "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Concentrated in a few producers."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_grid"
+              ],
+              "weightBps": 2000,
+              "plannedUsdc": "100.00",
+              "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Returns depend on regulated rates."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "exposureIds": [],
+              "weightBps": 1500,
+              "plannedUsdc": "75.00",
+              "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+              "risks": [
+                "Stablecoin value depends on its issuer reserves."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            }
+          ]
+        },
+        "somaErrada": {
+          "validation": {
+            "valid": false,
+            "conclusive": true,
+            "totalBps": 9000,
+            "issues": [
+              {
+                "code": "SUM_NOT_100",
+                "severity": "error",
+                "instrumentId": null,
+                "message": "Weights must add up to 100%.",
+                "params": {
+                  "totalBps": 9000
+                }
+              }
+            ],
+            "policyVersion": "2026-09-01"
+          },
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_power"
+              ],
+              "weightBps": 3500,
+              "plannedUsdc": "175.00",
+              "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Power prices and regulation can change quickly."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_nuclear"
+              ],
+              "weightBps": 3000,
+              "plannedUsdc": "150.00",
+              "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Concentrated in a few producers."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_grid"
+              ],
+              "weightBps": 2000,
+              "plannedUsdc": "100.00",
+              "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Returns depend on regulated rates."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "exposureIds": [],
+              "weightBps": 500,
+              "plannedUsdc": "25.00",
+              "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+              "risks": [
+                "Stablecoin value depends on its issuer reserves."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            }
+          ]
+        }
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /proposals/{id}/explanations": {
+    "200": {
+      "body": {
+        "explanation": "PWR-E represents electricity generation, the first exposure of your thesis. It carries the largest weight because it is the most direct representation in the catalog.",
+        "limitations": [
+          "It is a tokenized product",
+          "not direct ownership of the shares."
+        ],
+        "remaining": 4
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "403": {
+      "body": {
+        "error": {
+          "code": "ANON_QUOTA_USED",
+          "message": "You have used your free interpretation. Connect your wallet to interpret again.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /instruments/{id}": {
+    "200": {
+      "body": {
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "represents": "A basket of listed electricity generation companies, issued as a token on Solana.",
+        "issuer": {
+          "name": "Meridian Tokenized Assets (fictional)",
+          "nature": "Tokenized-asset issuer"
+        },
+        "economicRights": [
+          "Value follows the underlying basket.",
+          "No voting rights over the underlying shares."
+        ],
+        "limitations": [
+          "It is a tokenized product, not direct ownership of the shares.",
+          "Trading follows the availability of the underlying market."
+        ],
+        "risks": [
+          "Power prices and regulation can change quickly.",
+          "The issuer may suspend minting or redemption."
+        ],
+        "costs": [
+          "Platform fee of about 0.05% per swap.",
+          "Network fee paid in SOL."
+        ],
+        "howToTrade": "Swap USDC for PWR-E and back, through a route the app finds when you review each operation.",
+        "availability": {
+          "buy": "available",
+          "sell": "available",
+          "checkedAt": "2026-09-23T14:05:00Z"
+        },
+        "evidence": [
+          {
+            "label": "Issuer fact sheet (placeholder)",
+            "url": "https://example.com/pwr-e/fact-sheet",
+            "reviewedAt": "2026-09-15"
+          }
+        ],
+        "eligibilityNotes": [
+          "May not be available in some regions."
+        ]
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "GET /wallet/balances": {
+    "200": {
+      "body": {
+        "wallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+        "network": "solana-mainnet",
+        "fetchedAt": "2026-09-23T14:19:00Z",
+        "sol": {
+          "quantity": "0.84",
+          "suggestedFeeReserve": "0.01"
+        },
+        "tokens": [
+          {
+            "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "instrumentId": "ins_usdc",
+            "symbol": "USDC",
+            "quantity": "500.00",
+            "decimals": 6,
+            "inCatalog": true
+          },
+          {
+            "mint": "OddT3Rk8Wn5YbQe2HcVx7ZpGa4MuJd9LsFtCy6NhB1Ae",
+            "instrumentId": null,
+            "symbol": null,
+            "quantity": "12000.50",
+            "decimals": 5,
+            "inCatalog": false
+          }
+        ]
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /plans": {
+    "200": {
+      "body": {
+        "items": [
+          {
+            "id": "plan_7d1",
+            "status": "active",
+            "version": 1,
+            "budgetUsdc": "500.00",
+            "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+            "createdAt": "2026-09-23T14:10:00Z",
+            "updatedAt": "2026-09-23T14:15:00Z"
+          },
+          {
+            "id": "plan_a20",
+            "status": "draft",
+            "version": 1,
+            "budgetUsdc": "200.00",
+            "interpretationSummary": "Rising demand for AI semiconductors.",
+            "createdAt": "2026-09-22T09:00:00Z",
+            "updatedAt": "2026-09-22T09:00:00Z"
+          }
+        ]
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /plans": {
+    "201": {
+      "body": {
+        "id": "plan_7d1",
+        "proposalId": "prop_5c8",
+        "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+        "status": "draft",
+        "version": 1,
+        "budgetUsdc": "500.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "trackedMints": [],
+        "createdAt": "2026-09-23T14:10:00Z",
+        "updatedAt": "2026-09-23T14:10:00Z"
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /plans/{id}": {
+    "200": {
+      "body": {
+        "id": "plan_7d1",
+        "proposalId": "prop_5c8",
+        "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+        "status": "active",
+        "version": 1,
+        "budgetUsdc": "500.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "trackedMints": [
+          "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+          "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+          "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        ],
+        "createdAt": "2026-09-23T14:10:00Z",
+        "updatedAt": "2026-09-23T14:15:00Z"
+      },
+      "examples": {
+        "ativo": {
+          "id": "plan_7d1",
+          "proposalId": "prop_5c8",
+          "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+          "status": "active",
+          "version": 1,
+          "budgetUsdc": "500.00",
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_power"
+              ],
+              "weightBps": 3500,
+              "plannedUsdc": "175.00",
+              "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Power prices and regulation can change quickly."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_nuclear"
+              ],
+              "weightBps": 3000,
+              "plannedUsdc": "150.00",
+              "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Concentrated in a few producers."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_grid"
+              ],
+              "weightBps": 2000,
+              "plannedUsdc": "100.00",
+              "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Returns depend on regulated rates."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "exposureIds": [],
+              "weightBps": 1500,
+              "plannedUsdc": "75.00",
+              "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+              "risks": [
+                "Stablecoin value depends on its issuer reserves."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            }
+          ],
+          "validation": {
+            "valid": true,
+            "conclusive": true,
+            "totalBps": 10000,
+            "issues": [],
+            "policyVersion": "2026-09-01"
+          },
+          "trackedMints": [
+            "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+            "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+          ],
+          "createdAt": "2026-09-23T14:10:00Z",
+          "updatedAt": "2026-09-23T14:15:00Z"
+        },
+        "rascunho": {
+          "id": "plan_7d1",
+          "proposalId": "prop_5c8",
+          "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+          "status": "draft",
+          "version": 1,
+          "budgetUsdc": "500.00",
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_power"
+              ],
+              "weightBps": 3500,
+              "plannedUsdc": "175.00",
+              "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Power prices and regulation can change quickly."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_nuclear"
+              ],
+              "weightBps": 3000,
+              "plannedUsdc": "150.00",
+              "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Concentrated in a few producers."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "exposureIds": [
+                "exp_grid"
+              ],
+              "weightBps": 2000,
+              "plannedUsdc": "100.00",
+              "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+              "risks": [
+                "It is a tokenized product, not direct ownership of the shares.",
+                "Returns depend on regulated rates."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "exposureIds": [],
+              "weightBps": 1500,
+              "plannedUsdc": "75.00",
+              "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+              "risks": [
+                "Stablecoin value depends on its issuer reserves."
+              ],
+              "availability": {
+                "buy": "available",
+                "sell": "available",
+                "checkedAt": "2026-09-23T14:05:00Z"
+              },
+              "state": "active"
+            }
+          ],
+          "validation": {
+            "valid": true,
+            "conclusive": true,
+            "totalBps": 10000,
+            "issues": [],
+            "policyVersion": "2026-09-01"
+          },
+          "trackedMints": [],
+          "createdAt": "2026-09-23T14:10:00Z",
+          "updatedAt": "2026-09-23T14:10:00Z"
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "PUT /plans/{id}": {
+    "200": {
+      "body": {
+        "id": "plan_7d1",
+        "proposalId": "prop_5c8",
+        "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+        "status": "active",
+        "version": 2,
+        "budgetUsdc": "600.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "210.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "180.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "120.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "90.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "trackedMints": [
+          "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+          "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+          "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        ],
+        "createdAt": "2026-09-23T14:10:00Z",
+        "updatedAt": "2026-09-23T15:00:00Z"
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "PATCH /plans/{id}": {
+    "200": {
+      "body": {
+        "id": "plan_7d1",
+        "proposalId": "prop_5c8",
+        "interpretationSummary": "Growing electricity demand driven by AI data centers.",
+        "status": "active",
+        "version": 1,
+        "budgetUsdc": "500.00",
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_power"
+            ],
+            "weightBps": 3500,
+            "plannedUsdc": "175.00",
+            "rationale": "Tokenized exposure to electricity generation companies, the most direct representation of rising power demand from AI data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Power prices and regulation can change quickly."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_nuclear"
+            ],
+            "weightBps": 3000,
+            "plannedUsdc": "150.00",
+            "rationale": "Nuclear and uranium producers, included because you answered that nuclear power is part of your thesis.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Concentrated in a few producers."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "exposureIds": [
+              "exp_grid"
+            ],
+            "weightBps": 2000,
+            "plannedUsdc": "100.00",
+            "rationale": "Utilities and grid builders that carry the extra load of new data centers.",
+            "risks": [
+              "It is a tokenized product, not direct ownership of the shares.",
+              "Returns depend on regulated rates."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "exposureIds": [],
+            "weightBps": 1500,
+            "plannedUsdc": "75.00",
+            "rationale": "Cash portion that keeps part of your budget stable and ready for future purchases.",
+            "risks": [
+              "Stablecoin value depends on its issuer reserves."
+            ],
+            "availability": {
+              "buy": "available",
+              "sell": "available",
+              "checkedAt": "2026-09-23T14:05:00Z"
+            },
+            "state": "active"
+          }
+        ],
+        "validation": {
+          "valid": true,
+          "conclusive": true,
+          "totalBps": 10000,
+          "issues": [],
+          "policyVersion": "2026-09-01"
+        },
+        "trackedMints": [
+          "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+          "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+          "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        ],
+        "createdAt": "2026-09-23T14:10:00Z",
+        "updatedAt": "2026-09-23T14:15:00Z"
+      }
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /operations": {
+    "200": {
+      "body": {
+        "items": [
+          {
+            "id": "op_3f9",
+            "planId": "plan_7d1",
+            "side": "buy",
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "status": "pending",
+            "balanceUpdating": false,
+            "review": {
+              "inputAmount": "175.00",
+              "inputSymbol": "USDC",
+              "estimatedOutput": "19.894000",
+              "outputSymbol": "PWR-E",
+              "minimumOutput": "19.794530",
+              "slippageBps": 50,
+              "fees": [
+                {
+                  "label": "Platform fee",
+                  "amount": "0.09",
+                  "symbol": "USDC"
+                },
+                {
+                  "label": "Network fee",
+                  "amount": "0.000005",
+                  "symbol": "SOL"
+                }
+              ],
+              "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+              "expiresAt": "2026-09-23T14:21:00Z",
+              "planEffect": {
+                "targetBps": 3500,
+                "currentBps": 0,
+                "afterBps": 3500
+              }
+            },
+            "transaction": null,
+            "result": {
+              "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+              "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+              "inputAmount": null,
+              "outputAmount": null,
+              "failureReason": null
+            },
+            "createdAt": "2026-09-23T14:20:00Z",
+            "updatedAt": "2026-09-23T14:20:50Z"
+          }
+        ]
+      },
+      "examples": {
+        "pendente": {
+          "items": [
+            {
+              "id": "op_3f9",
+              "planId": "plan_7d1",
+              "side": "buy",
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "status": "pending",
+              "balanceUpdating": false,
+              "review": {
+                "inputAmount": "175.00",
+                "inputSymbol": "USDC",
+                "estimatedOutput": "19.894000",
+                "outputSymbol": "PWR-E",
+                "minimumOutput": "19.794530",
+                "slippageBps": 50,
+                "fees": [
+                  {
+                    "label": "Platform fee",
+                    "amount": "0.09",
+                    "symbol": "USDC"
+                  },
+                  {
+                    "label": "Network fee",
+                    "amount": "0.000005",
+                    "symbol": "SOL"
+                  }
+                ],
+                "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                "expiresAt": "2026-09-23T14:21:00Z",
+                "planEffect": {
+                  "targetBps": 3500,
+                  "currentBps": 0,
+                  "afterBps": 3500
+                }
+              },
+              "transaction": null,
+              "result": {
+                "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+                "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+                "inputAmount": null,
+                "outputAmount": null,
+                "failureReason": null
+              },
+              "createdAt": "2026-09-23T14:20:00Z",
+              "updatedAt": "2026-09-23T14:20:50Z"
+            }
+          ]
+        },
+        "aguardandoAssinatura": {
+          "items": [
+            {
+              "id": "op_3f9",
+              "planId": "plan_7d1",
+              "side": "buy",
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "status": "awaiting_signature",
+              "balanceUpdating": false,
+              "review": {
+                "inputAmount": "175.00",
+                "inputSymbol": "USDC",
+                "estimatedOutput": "19.894000",
+                "outputSymbol": "PWR-E",
+                "minimumOutput": "19.794530",
+                "slippageBps": 50,
+                "fees": [
+                  {
+                    "label": "Platform fee",
+                    "amount": "0.09",
+                    "symbol": "USDC"
+                  },
+                  {
+                    "label": "Network fee",
+                    "amount": "0.000005",
+                    "symbol": "SOL"
+                  }
+                ],
+                "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                "expiresAt": "2026-09-23T14:21:00Z",
+                "planEffect": {
+                  "targetBps": 3500,
+                  "currentBps": 0,
+                  "afterBps": 3500
+                }
+              },
+              "transaction": null,
+              "result": {
+                "signature": null,
+                "explorerUrl": null,
+                "inputAmount": null,
+                "outputAmount": null,
+                "failureReason": null
+              },
+              "createdAt": "2026-09-23T14:20:00Z",
+              "updatedAt": "2026-09-23T14:20:20Z"
+            }
+          ]
+        },
+        "nenhuma": {
+          "items": []
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /operations": {
+    "201": {
+      "body": {
+        "id": "op_3f9",
+        "planId": "plan_7d1",
+        "side": "buy",
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "status": "ready_for_review",
+        "balanceUpdating": false,
+        "review": {
+          "inputAmount": "175.00",
+          "inputSymbol": "USDC",
+          "estimatedOutput": "19.894000",
+          "outputSymbol": "PWR-E",
+          "minimumOutput": "19.794530",
+          "slippageBps": 50,
+          "fees": [
+            {
+              "label": "Platform fee",
+              "amount": "0.09",
+              "symbol": "USDC"
+            },
+            {
+              "label": "Network fee",
+              "amount": "0.000005",
+              "symbol": "SOL"
+            }
+          ],
+          "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+          "expiresAt": "2026-09-23T14:21:00Z",
+          "planEffect": {
+            "targetBps": 3500,
+            "currentBps": 0,
+            "afterBps": 3500
+          }
+        },
+        "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+        "result": {
+          "signature": null,
+          "explorerUrl": null,
+          "inputAmount": null,
+          "outputAmount": null,
+          "failureReason": null
+        },
+        "createdAt": "2026-09-23T14:20:00Z",
+        "updatedAt": "2026-09-23T14:20:00Z"
+      },
+      "examples": {
+        "compra": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "ready_for_review",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:00Z"
+        },
+        "venda": {
+          "id": "op_8b1",
+          "planId": "plan_7d1",
+          "side": "sell",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "ready_for_review",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "10.000000",
+            "inputSymbol": "PWR-E",
+            "estimatedOutput": "88.20",
+            "outputSymbol": "USDC",
+            "minimumOutput": "87.76",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.04",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T16:01:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 3499,
+              "afterBps": 1730
+            }
+          },
+          "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T16:00:00Z",
+          "updatedAt": "2026-09-23T16:00:00Z"
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "409": {
+      "body": {
+        "error": {
+          "code": "OPERATION_IN_PROGRESS",
+          "message": "You already have an operation in progress for this asset.",
+          "retryAfter": null,
+          "details": {
+            "operationId": "op_3f9"
+          }
+        }
+      },
+      "examples": {
+        "operacaoEmAndamento": {
+          "error": {
+            "code": "OPERATION_IN_PROGRESS",
+            "message": "You already have an operation in progress for this asset.",
+            "retryAfter": null,
+            "details": {
+              "operationId": "op_3f9"
+            }
+          }
+        },
+        "cotacaoExpirada": {
+          "error": {
+            "code": "QUOTE_EXPIRED",
+            "message": "This quote expired. Get a new one to continue.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "idempotencia": {
+          "error": {
+            "code": "IDEMPOTENCY_CONFLICT",
+            "message": "This request was already sent with different values.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "mudancaRelevante": {
+          "error": {
+            "code": "MATERIAL_CHANGE",
+            "message": "The price changed. Review the new quote before continuing.",
+            "retryAfter": null,
+            "details": {
+              "operation": {
+                "id": "op_3f9",
+                "planId": "plan_7d1",
+                "side": "buy",
+                "instrument": {
+                  "id": "ins_pwre",
+                  "symbol": "PWR-E",
+                  "name": "Power Generation Basket",
+                  "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                  "decimals": 6,
+                  "kind": "token",
+                  "status": "approved",
+                  "exposureLabel": "Power generation",
+                  "issuerName": "Meridian Tokenized Assets (fictional)"
+                },
+                "status": "ready_for_review",
+                "balanceUpdating": false,
+                "review": {
+                  "inputAmount": "175.00",
+                  "inputSymbol": "USDC",
+                  "estimatedOutput": "19.200000",
+                  "outputSymbol": "PWR-E",
+                  "minimumOutput": "19.104000",
+                  "slippageBps": 50,
+                  "fees": [
+                    {
+                      "label": "Platform fee",
+                      "amount": "0.09",
+                      "symbol": "USDC"
+                    },
+                    {
+                      "label": "Network fee",
+                      "amount": "0.000005",
+                      "symbol": "SOL"
+                    }
+                  ],
+                  "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                  "expiresAt": "2026-09-23T14:22:00Z",
+                  "planEffect": {
+                    "targetBps": 3500,
+                    "currentBps": 0,
+                    "afterBps": 3500
+                  }
+                },
+                "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+                "result": {
+                  "signature": null,
+                  "explorerUrl": null,
+                  "inputAmount": null,
+                  "outputAmount": null,
+                  "failureReason": null
+                },
+                "createdAt": "2026-09-23T14:20:00Z",
+                "updatedAt": "2026-09-23T14:20:00Z"
+              }
+            }
+          }
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "POST /operations/{id}/quotes": {
+    "200": {
+      "body": {
+        "id": "op_3f9",
+        "planId": "plan_7d1",
+        "side": "buy",
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "status": "ready_for_review",
+        "balanceUpdating": false,
+        "review": {
+          "inputAmount": "175.00",
+          "inputSymbol": "USDC",
+          "estimatedOutput": "19.894000",
+          "outputSymbol": "PWR-E",
+          "minimumOutput": "19.794530",
+          "slippageBps": 50,
+          "fees": [
+            {
+              "label": "Platform fee",
+              "amount": "0.09",
+              "symbol": "USDC"
+            },
+            {
+              "label": "Network fee",
+              "amount": "0.000005",
+              "symbol": "SOL"
+            }
+          ],
+          "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+          "expiresAt": "2026-09-23T14:22:00Z",
+          "planEffect": {
+            "targetBps": 3500,
+            "currentBps": 0,
+            "afterBps": 3500
+          }
+        },
+        "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+        "result": {
+          "signature": null,
+          "explorerUrl": null,
+          "inputAmount": null,
+          "outputAmount": null,
+          "failureReason": null
+        },
+        "createdAt": "2026-09-23T14:20:00Z",
+        "updatedAt": "2026-09-23T14:21:30Z"
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "409": {
+      "body": {
+        "error": {
+          "code": "OPERATION_IN_PROGRESS",
+          "message": "You already have an operation in progress for this asset.",
+          "retryAfter": null,
+          "details": {
+            "operationId": "op_3f9"
+          }
+        }
+      },
+      "examples": {
+        "operacaoEmAndamento": {
+          "error": {
+            "code": "OPERATION_IN_PROGRESS",
+            "message": "You already have an operation in progress for this asset.",
+            "retryAfter": null,
+            "details": {
+              "operationId": "op_3f9"
+            }
+          }
+        },
+        "cotacaoExpirada": {
+          "error": {
+            "code": "QUOTE_EXPIRED",
+            "message": "This quote expired. Get a new one to continue.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "idempotencia": {
+          "error": {
+            "code": "IDEMPOTENCY_CONFLICT",
+            "message": "This request was already sent with different values.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "mudancaRelevante": {
+          "error": {
+            "code": "MATERIAL_CHANGE",
+            "message": "The price changed. Review the new quote before continuing.",
+            "retryAfter": null,
+            "details": {
+              "operation": {
+                "id": "op_3f9",
+                "planId": "plan_7d1",
+                "side": "buy",
+                "instrument": {
+                  "id": "ins_pwre",
+                  "symbol": "PWR-E",
+                  "name": "Power Generation Basket",
+                  "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                  "decimals": 6,
+                  "kind": "token",
+                  "status": "approved",
+                  "exposureLabel": "Power generation",
+                  "issuerName": "Meridian Tokenized Assets (fictional)"
+                },
+                "status": "ready_for_review",
+                "balanceUpdating": false,
+                "review": {
+                  "inputAmount": "175.00",
+                  "inputSymbol": "USDC",
+                  "estimatedOutput": "19.200000",
+                  "outputSymbol": "PWR-E",
+                  "minimumOutput": "19.104000",
+                  "slippageBps": 50,
+                  "fees": [
+                    {
+                      "label": "Platform fee",
+                      "amount": "0.09",
+                      "symbol": "USDC"
+                    },
+                    {
+                      "label": "Network fee",
+                      "amount": "0.000005",
+                      "symbol": "SOL"
+                    }
+                  ],
+                  "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                  "expiresAt": "2026-09-23T14:22:00Z",
+                  "planEffect": {
+                    "targetBps": 3500,
+                    "currentBps": 0,
+                    "afterBps": 3500
+                  }
+                },
+                "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+                "result": {
+                  "signature": null,
+                  "explorerUrl": null,
+                  "inputAmount": null,
+                  "outputAmount": null,
+                  "failureReason": null
+                },
+                "createdAt": "2026-09-23T14:20:00Z",
+                "updatedAt": "2026-09-23T14:20:00Z"
+              }
+            }
+          }
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "POST /operations/{id}/events": {
+    "200": {
+      "body": {
+        "id": "op_3f9",
+        "planId": "plan_7d1",
+        "side": "buy",
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "status": "awaiting_signature",
+        "balanceUpdating": false,
+        "review": {
+          "inputAmount": "175.00",
+          "inputSymbol": "USDC",
+          "estimatedOutput": "19.894000",
+          "outputSymbol": "PWR-E",
+          "minimumOutput": "19.794530",
+          "slippageBps": 50,
+          "fees": [
+            {
+              "label": "Platform fee",
+              "amount": "0.09",
+              "symbol": "USDC"
+            },
+            {
+              "label": "Network fee",
+              "amount": "0.000005",
+              "symbol": "SOL"
+            }
+          ],
+          "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+          "expiresAt": "2026-09-23T14:21:00Z",
+          "planEffect": {
+            "targetBps": 3500,
+            "currentBps": 0,
+            "afterBps": 3500
+          }
+        },
+        "transaction": null,
+        "result": {
+          "signature": null,
+          "explorerUrl": null,
+          "inputAmount": null,
+          "outputAmount": null,
+          "failureReason": null
+        },
+        "createdAt": "2026-09-23T14:20:00Z",
+        "updatedAt": "2026-09-23T14:20:20Z"
+      },
+      "examples": {
+        "assinaturaSolicitada": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "awaiting_signature",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:20Z"
+        },
+        "assinaturaRecusada": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "rejected",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:40Z"
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /operations/{id}/submissions": {
+    "202": {
+      "body": {
+        "id": "op_3f9",
+        "planId": "plan_7d1",
+        "side": "buy",
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "status": "pending",
+        "balanceUpdating": false,
+        "review": {
+          "inputAmount": "175.00",
+          "inputSymbol": "USDC",
+          "estimatedOutput": "19.894000",
+          "outputSymbol": "PWR-E",
+          "minimumOutput": "19.794530",
+          "slippageBps": 50,
+          "fees": [
+            {
+              "label": "Platform fee",
+              "amount": "0.09",
+              "symbol": "USDC"
+            },
+            {
+              "label": "Network fee",
+              "amount": "0.000005",
+              "symbol": "SOL"
+            }
+          ],
+          "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+          "expiresAt": "2026-09-23T14:21:00Z",
+          "planEffect": {
+            "targetBps": 3500,
+            "currentBps": 0,
+            "afterBps": 3500
+          }
+        },
+        "transaction": null,
+        "result": {
+          "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+          "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+          "inputAmount": null,
+          "outputAmount": null,
+          "failureReason": null
+        },
+        "createdAt": "2026-09-23T14:20:00Z",
+        "updatedAt": "2026-09-23T14:20:50Z"
+      },
+      "examples": {
+        "pendente": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "pending",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:50Z"
+        },
+        "enviando": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "sending",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:45Z"
+        }
+      }
+    },
+    "403": {
+      "body": {
+        "error": {
+          "code": "ANON_QUOTA_USED",
+          "message": "You have used your free interpretation. Connect your wallet to interpret again.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "409": {
+      "body": {
+        "error": {
+          "code": "OPERATION_IN_PROGRESS",
+          "message": "You already have an operation in progress for this asset.",
+          "retryAfter": null,
+          "details": {
+            "operationId": "op_3f9"
+          }
+        }
+      },
+      "examples": {
+        "operacaoEmAndamento": {
+          "error": {
+            "code": "OPERATION_IN_PROGRESS",
+            "message": "You already have an operation in progress for this asset.",
+            "retryAfter": null,
+            "details": {
+              "operationId": "op_3f9"
+            }
+          }
+        },
+        "cotacaoExpirada": {
+          "error": {
+            "code": "QUOTE_EXPIRED",
+            "message": "This quote expired. Get a new one to continue.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "idempotencia": {
+          "error": {
+            "code": "IDEMPOTENCY_CONFLICT",
+            "message": "This request was already sent with different values.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "mudancaRelevante": {
+          "error": {
+            "code": "MATERIAL_CHANGE",
+            "message": "The price changed. Review the new quote before continuing.",
+            "retryAfter": null,
+            "details": {
+              "operation": {
+                "id": "op_3f9",
+                "planId": "plan_7d1",
+                "side": "buy",
+                "instrument": {
+                  "id": "ins_pwre",
+                  "symbol": "PWR-E",
+                  "name": "Power Generation Basket",
+                  "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                  "decimals": 6,
+                  "kind": "token",
+                  "status": "approved",
+                  "exposureLabel": "Power generation",
+                  "issuerName": "Meridian Tokenized Assets (fictional)"
+                },
+                "status": "ready_for_review",
+                "balanceUpdating": false,
+                "review": {
+                  "inputAmount": "175.00",
+                  "inputSymbol": "USDC",
+                  "estimatedOutput": "19.200000",
+                  "outputSymbol": "PWR-E",
+                  "minimumOutput": "19.104000",
+                  "slippageBps": 50,
+                  "fees": [
+                    {
+                      "label": "Platform fee",
+                      "amount": "0.09",
+                      "symbol": "USDC"
+                    },
+                    {
+                      "label": "Network fee",
+                      "amount": "0.000005",
+                      "symbol": "SOL"
+                    }
+                  ],
+                  "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                  "expiresAt": "2026-09-23T14:22:00Z",
+                  "planEffect": {
+                    "targetBps": 3500,
+                    "currentBps": 0,
+                    "afterBps": 3500
+                  }
+                },
+                "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+                "result": {
+                  "signature": null,
+                  "explorerUrl": null,
+                  "inputAmount": null,
+                  "outputAmount": null,
+                  "failureReason": null
+                },
+                "createdAt": "2026-09-23T14:20:00Z",
+                "updatedAt": "2026-09-23T14:20:00Z"
+              }
+            }
+          }
+        }
+      }
+    },
+    "422": {
+      "body": {
+        "error": {
+          "code": "INSUFFICIENT_BALANCE",
+          "message": "You don't have enough USDC for this purchase.",
+          "retryAfter": null,
+          "details": {
+            "available": "120.00"
+          }
+        }
+      },
+      "examples": {
+        "saldoInsuficiente": {
+          "error": {
+            "code": "INSUFFICIENT_BALANCE",
+            "message": "You don't have enough USDC for this purchase.",
+            "retryAfter": null,
+            "details": {
+              "available": "120.00"
+            }
+          }
+        },
+        "semRota": {
+          "error": {
+            "code": "NO_ROUTE",
+            "message": "No route is available for this swap right now. Try again later.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "planoInvalido": {
+          "error": {
+            "code": "PLAN_INVALID",
+            "message": "This plan has problems to fix before it can be saved.",
+            "retryAfter": null,
+            "details": {
+              "validation": {
+                "valid": false,
+                "conclusive": true,
+                "totalBps": 9000,
+                "issues": [
+                  {
+                    "code": "SUM_NOT_100",
+                    "severity": "error",
+                    "instrumentId": null,
+                    "message": "Weights must add up to 100%.",
+                    "params": {
+                      "totalBps": 9000
+                    }
+                  }
+                ],
+                "policyVersion": "2026-09-01"
+              }
+            }
+          }
+        },
+        "transacaoRejeitada": {
+          "error": {
+            "code": "TRANSACTION_REJECTED",
+            "message": "We couldn't verify this transaction, so it was not sent to your wallet.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /operations/{id}": {
+    "200": {
+      "body": {
+        "id": "op_3f9",
+        "planId": "plan_7d1",
+        "side": "buy",
+        "instrument": {
+          "id": "ins_pwre",
+          "symbol": "PWR-E",
+          "name": "Power Generation Basket",
+          "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+          "decimals": 6,
+          "kind": "token",
+          "status": "approved",
+          "exposureLabel": "Power generation",
+          "issuerName": "Meridian Tokenized Assets (fictional)"
+        },
+        "status": "confirmed",
+        "balanceUpdating": false,
+        "review": {
+          "inputAmount": "175.00",
+          "inputSymbol": "USDC",
+          "estimatedOutput": "19.894000",
+          "outputSymbol": "PWR-E",
+          "minimumOutput": "19.794530",
+          "slippageBps": 50,
+          "fees": [
+            {
+              "label": "Platform fee",
+              "amount": "0.09",
+              "symbol": "USDC"
+            },
+            {
+              "label": "Network fee",
+              "amount": "0.000005",
+              "symbol": "SOL"
+            }
+          ],
+          "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+          "expiresAt": "2026-09-23T14:21:00Z",
+          "planEffect": {
+            "targetBps": 3500,
+            "currentBps": 0,
+            "afterBps": 3500
+          }
+        },
+        "transaction": null,
+        "result": {
+          "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+          "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+          "inputAmount": "175.00",
+          "outputAmount": "19.881200",
+          "failureReason": null
+        },
+        "createdAt": "2026-09-23T14:20:00Z",
+        "updatedAt": "2026-09-23T14:21:10Z"
+      },
+      "examples": {
+        "confirmada": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "confirmed",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "inputAmount": "175.00",
+            "outputAmount": "19.881200",
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:21:10Z"
+        },
+        "confirmadaAtualizandoSaldo": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "confirmed",
+          "balanceUpdating": true,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "inputAmount": "175.00",
+            "outputAmount": "19.881200",
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:21:10Z"
+        },
+        "pendente": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "pending",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:50Z"
+        },
+        "aguardandoAssinatura": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "awaiting_signature",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:20Z"
+        },
+        "pronta": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "ready_for_review",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": "AQABAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn8=",
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": null
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:20:00Z"
+        },
+        "falhou": {
+          "id": "op_3f9",
+          "planId": "plan_7d1",
+          "side": "buy",
+          "instrument": {
+            "id": "ins_pwre",
+            "symbol": "PWR-E",
+            "name": "Power Generation Basket",
+            "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+            "decimals": 6,
+            "kind": "token",
+            "status": "approved",
+            "exposureLabel": "Power generation",
+            "issuerName": "Meridian Tokenized Assets (fictional)"
+          },
+          "status": "failed",
+          "balanceUpdating": false,
+          "review": {
+            "inputAmount": "175.00",
+            "inputSymbol": "USDC",
+            "estimatedOutput": "19.894000",
+            "outputSymbol": "PWR-E",
+            "minimumOutput": "19.794530",
+            "slippageBps": 50,
+            "fees": [
+              {
+                "label": "Platform fee",
+                "amount": "0.09",
+                "symbol": "USDC"
+              },
+              {
+                "label": "Network fee",
+                "amount": "0.000005",
+                "symbol": "SOL"
+              }
+            ],
+            "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+            "expiresAt": "2026-09-23T14:21:00Z",
+            "planEffect": {
+              "targetBps": 3500,
+              "currentBps": 0,
+              "afterBps": 3500
+            }
+          },
+          "transaction": null,
+          "result": {
+            "signature": null,
+            "explorerUrl": null,
+            "inputAmount": null,
+            "outputAmount": null,
+            "failureReason": "The transaction did not go through. Nothing was spent."
+          },
+          "createdAt": "2026-09-23T14:20:00Z",
+          "updatedAt": "2026-09-23T14:21:10Z"
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "GET /plans/{id}/position": {
+    "200": {
+      "body": {
+        "planId": "plan_7d1",
+        "planVersion": 1,
+        "updatedAt": "2026-09-23T14:25:00Z",
+        "composition": {
+          "available": true,
+          "reason": null
+        },
+        "totals": {
+          "knownValueUsd": "499.95",
+          "complete": true,
+          "pendingPlannedUsdc": "250.00"
+        },
+        "items": [
+          {
+            "instrument": {
+              "id": "ins_pwre",
+              "symbol": "PWR-E",
+              "name": "Power Generation Basket",
+              "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Power generation",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "state": "active",
+            "quantity": "19.881200",
+            "price": {
+              "usd": "8.80",
+              "observedAt": "2026-09-23T14:25:00Z",
+              "valid": true
+            },
+            "valuationUsd": "174.95",
+            "targetBps": 3500,
+            "currentBps": 3499,
+            "diffBps": -1,
+            "pendingPlannedUsdc": "0.00",
+            "cost": {
+              "known": true,
+              "averageUsd": "8.80"
+            },
+            "resultUsd": "-0.05",
+            "balanceUpdating": false
+          },
+          {
+            "instrument": {
+              "id": "ins_nukex",
+              "symbol": "NUKE-X",
+              "name": "Nuclear & Uranium Exposure",
+              "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Nuclear and uranium",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "state": "active",
+            "quantity": "0",
+            "price": {
+              "usd": "12.40",
+              "observedAt": "2026-09-23T14:25:00Z",
+              "valid": true
+            },
+            "valuationUsd": "0.00",
+            "targetBps": 3000,
+            "currentBps": 0,
+            "diffBps": -3000,
+            "pendingPlannedUsdc": "150.00",
+            "cost": {
+              "known": true,
+              "averageUsd": null
+            },
+            "resultUsd": "0.00",
+            "balanceUpdating": false
+          },
+          {
+            "instrument": {
+              "id": "ins_gridx",
+              "symbol": "GRID-X",
+              "name": "Grid & Utilities Basket",
+              "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+              "decimals": 6,
+              "kind": "token",
+              "status": "approved",
+              "exposureLabel": "Grid and utilities",
+              "issuerName": "Meridian Tokenized Assets (fictional)"
+            },
+            "state": "active",
+            "quantity": "0",
+            "price": {
+              "usd": "6.10",
+              "observedAt": "2026-09-23T14:25:00Z",
+              "valid": true
+            },
+            "valuationUsd": "0.00",
+            "targetBps": 2000,
+            "currentBps": 0,
+            "diffBps": -2000,
+            "pendingPlannedUsdc": "100.00",
+            "cost": {
+              "known": true,
+              "averageUsd": null
+            },
+            "resultUsd": "0.00",
+            "balanceUpdating": false
+          },
+          {
+            "instrument": {
+              "id": "ins_usdc",
+              "symbol": "USDC",
+              "name": "USD Coin",
+              "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+              "decimals": 6,
+              "kind": "cash",
+              "status": "approved",
+              "exposureLabel": "Cash in USDC",
+              "issuerName": "Circle"
+            },
+            "state": "active",
+            "quantity": "325.00",
+            "price": {
+              "usd": "1.00",
+              "observedAt": "2026-09-23T14:25:00Z",
+              "valid": true
+            },
+            "valuationUsd": "325.00",
+            "targetBps": 1500,
+            "currentBps": 6501,
+            "diffBps": 5001,
+            "pendingPlannedUsdc": "0.00",
+            "cost": {
+              "known": true,
+              "averageUsd": "1.00"
+            },
+            "resultUsd": "0.00",
+            "balanceUpdating": false
+          }
+        ],
+        "limitations": []
+      },
+      "examples": {
+        "completa": {
+          "planId": "plan_7d1",
+          "planVersion": 1,
+          "updatedAt": "2026-09-23T14:25:00Z",
+          "composition": {
+            "available": true,
+            "reason": null
+          },
+          "totals": {
+            "knownValueUsd": "499.95",
+            "complete": true,
+            "pendingPlannedUsdc": "250.00"
+          },
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "19.881200",
+              "price": {
+                "usd": "8.80",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "174.95",
+              "targetBps": 3500,
+              "currentBps": 3499,
+              "diffBps": -1,
+              "pendingPlannedUsdc": "0.00",
+              "cost": {
+                "known": true,
+                "averageUsd": "8.80"
+              },
+              "resultUsd": "-0.05",
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "0",
+              "price": {
+                "usd": "12.40",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "0.00",
+              "targetBps": 3000,
+              "currentBps": 0,
+              "diffBps": -3000,
+              "pendingPlannedUsdc": "150.00",
+              "cost": {
+                "known": true,
+                "averageUsd": null
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "0",
+              "price": {
+                "usd": "6.10",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "0.00",
+              "targetBps": 2000,
+              "currentBps": 0,
+              "diffBps": -2000,
+              "pendingPlannedUsdc": "100.00",
+              "cost": {
+                "known": true,
+                "averageUsd": null
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "state": "active",
+              "quantity": "325.00",
+              "price": {
+                "usd": "1.00",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "325.00",
+              "targetBps": 1500,
+              "currentBps": 6501,
+              "diffBps": 5001,
+              "pendingPlannedUsdc": "0.00",
+              "cost": {
+                "known": true,
+                "averageUsd": "1.00"
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            }
+          ],
+          "limitations": []
+        },
+        "semPreco": {
+          "planId": "plan_7d1",
+          "planVersion": 1,
+          "updatedAt": "2026-09-23T14:25:00Z",
+          "composition": {
+            "available": false,
+            "reason": "The price of PWR-E is missing, so the composition cannot be shown."
+          },
+          "totals": {
+            "knownValueUsd": "325.00",
+            "complete": false,
+            "pendingPlannedUsdc": "250.00"
+          },
+          "items": [
+            {
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "19.881200",
+              "price": {
+                "usd": null,
+                "observedAt": null,
+                "valid": false
+              },
+              "valuationUsd": null,
+              "targetBps": 3500,
+              "currentBps": null,
+              "diffBps": null,
+              "pendingPlannedUsdc": "0.00",
+              "cost": {
+                "known": true,
+                "averageUsd": "8.80"
+              },
+              "resultUsd": null,
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_nukex",
+                "symbol": "NUKE-X",
+                "name": "Nuclear & Uranium Exposure",
+                "mint": "NuKe4Ts8aWq2ZhY7pCx9VbM3rDj6FnEg5LtUkHoQ1sXy",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Nuclear and uranium",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "0",
+              "price": {
+                "usd": "12.40",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "0.00",
+              "targetBps": 3000,
+              "currentBps": null,
+              "diffBps": null,
+              "pendingPlannedUsdc": "150.00",
+              "cost": {
+                "known": true,
+                "averageUsd": null
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_gridx",
+                "symbol": "GRID-X",
+                "name": "Grid & Utilities Basket",
+                "mint": "GrdX5Hn2Yp8KbQv3TcJ7mWa9ZeRu4SfLd6NxCtVg1Ewh",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Grid and utilities",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "state": "active",
+              "quantity": "0",
+              "price": {
+                "usd": "6.10",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "0.00",
+              "targetBps": 2000,
+              "currentBps": null,
+              "diffBps": null,
+              "pendingPlannedUsdc": "100.00",
+              "cost": {
+                "known": true,
+                "averageUsd": null
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            },
+            {
+              "instrument": {
+                "id": "ins_usdc",
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "decimals": 6,
+                "kind": "cash",
+                "status": "approved",
+                "exposureLabel": "Cash in USDC",
+                "issuerName": "Circle"
+              },
+              "state": "active",
+              "quantity": "325.00",
+              "price": {
+                "usd": "1.00",
+                "observedAt": "2026-09-23T14:25:00Z",
+                "valid": true
+              },
+              "valuationUsd": "325.00",
+              "targetBps": 1500,
+              "currentBps": null,
+              "diffBps": null,
+              "pendingPlannedUsdc": "0.00",
+              "cost": {
+                "known": true,
+                "averageUsd": "1.00"
+              },
+              "resultUsd": "0.00",
+              "balanceUpdating": false
+            }
+          ],
+          "limitations": [
+            {
+              "code": "PRICE_MISSING",
+              "instrumentId": "ins_pwre",
+              "message": "We could not get a price for PWR-E right now. Its value is left out of the total."
+            }
+          ]
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "404": {
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "We couldn't find that.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /plans/{id}/reconciliations": {
+    "202": {
+      "body": {
+        "startedAt": "2026-09-23T14:30:00Z"
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    },
+    "503": {
+      "body": {
+        "error": {
+          "code": "AI_UNAVAILABLE",
+          "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+          "retryAfter": null,
+          "details": {}
+        }
+      },
+      "examples": {
+        "iaIndisponivel": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "message": "We couldn't interpret this right now. Try again or start from a suggested thesis.",
+            "retryAfter": null,
+            "details": {}
+          }
+        },
+        "upstreamIndisponivel": {
+          "error": {
+            "code": "UPSTREAM_UNAVAILABLE",
+            "message": "A service we depend on is not responding. Try again in a moment.",
+            "retryAfter": null,
+            "details": {}
+          }
+        }
+      }
+    }
+  },
+  "GET /activity": {
+    "200": {
+      "body": {
+        "items": [
+          {
+            "kind": "operation",
+            "operation": {
+              "id": "op_3f9",
+              "planId": "plan_7d1",
+              "side": "buy",
+              "instrument": {
+                "id": "ins_pwre",
+                "symbol": "PWR-E",
+                "name": "Power Generation Basket",
+                "mint": "PwrE7Qm3vN8cXb2LkT5yHd9RzAfG4sJu6WoPeEnErGy1",
+                "decimals": 6,
+                "kind": "token",
+                "status": "approved",
+                "exposureLabel": "Power generation",
+                "issuerName": "Meridian Tokenized Assets (fictional)"
+              },
+              "status": "confirmed",
+              "balanceUpdating": false,
+              "review": {
+                "inputAmount": "175.00",
+                "inputSymbol": "USDC",
+                "estimatedOutput": "19.894000",
+                "outputSymbol": "PWR-E",
+                "minimumOutput": "19.794530",
+                "slippageBps": 50,
+                "fees": [
+                  {
+                    "label": "Platform fee",
+                    "amount": "0.09",
+                    "symbol": "USDC"
+                  },
+                  {
+                    "label": "Network fee",
+                    "amount": "0.000005",
+                    "symbol": "SOL"
+                  }
+                ],
+                "destinationWallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+                "expiresAt": "2026-09-23T14:21:00Z",
+                "planEffect": {
+                  "targetBps": 3500,
+                  "currentBps": 0,
+                  "afterBps": 3500
+                }
+              },
+              "transaction": null,
+              "result": {
+                "signature": "5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+                "explorerUrl": "https://solscan.io/tx/5Kd3NBUAdUnhyzenEwVLy9pBKxSwXvE9FMPyR4UKZvpe6E3AgLnjUBGEjsfdWvxs3JqyXVH1YPuG9XrsAZ1DbUQe",
+                "inputAmount": "175.00",
+                "outputAmount": "19.881200",
+                "failureReason": null
+              },
+              "createdAt": "2026-09-23T14:20:00Z",
+              "updatedAt": "2026-09-23T14:21:10Z"
+            }
+          },
+          {
+            "kind": "external_movement",
+            "id": "mov_1a4",
+            "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "symbol": "USDC",
+            "direction": "in",
+            "quantity": "500.00",
+            "signature": "3Fh9PqLdKw2XcYt8VbNa5ReUm7ZgJs4TxHnC6DyEoAk1QiWz9BvMuSf2LpGr8KaTe5NjXc3YdHq7VwRb4ZmUs6Pt",
+            "explorerUrl": "https://solscan.io/tx/3Fh9PqLdKw2XcYt8VbNa5ReUm7ZgJs4TxHnC6DyEoAk1QiWz9BvMuSf2LpGr8KaTe5NjXc3YdHq7VwRb4ZmUs6Pt",
+            "classification": "deposit",
+            "observedAt": "2026-09-23T13:40:00Z"
+          }
+        ],
+        "nextCursor": null
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    }
+  },
+  "POST /events": {
+    "204": {
+      "body": null
+    },
+    "400": {
+      "body": {
+        "error": {
+          "code": "TEXT_TOO_LONG",
+          "message": "Your thesis is over 600 characters.",
+          "retryAfter": null,
+          "details": {
+            "max": 600
+          }
+        }
+      }
+    },
+    "401": {
+      "body": {
+        "error": {
+          "code": "UNAUTHENTICATED",
+          "message": "Connect your wallet to continue.",
+          "retryAfter": null,
+          "details": {}
+        }
+      }
+    },
+    "429": {
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "Too many attempts in a row. Try again in 30 s.",
+          "retryAfter": 30,
+          "details": {}
+        }
+      }
+    }
+  }
+}
