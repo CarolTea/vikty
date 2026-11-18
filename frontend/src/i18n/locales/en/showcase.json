@@ -1,0 +1,122 @@
+{
+  "pageTitle": "Components showcase",
+  "pageIntro": "Every shared component in its meaningful states. Development only.",
+  "sections": {
+    "button": "Button",
+    "statusPill": "Status pill",
+    "chip": "Chip",
+    "notice": "Notice",
+    "icon": "Icon",
+    "appHeader": "App header",
+    "thesisInput": "Thesis input",
+    "thesisCard": "Thesis card",
+    "quoteBlock": "Quote block",
+    "progressSteps": "Progress steps",
+    "emptyState": "Empty state",
+    "budgetField": "Budget field",
+    "weightField": "Weight field",
+    "compositionBar": "Composition bar",
+    "assetCard": "Asset card",
+    "loadingState": "Loading state",
+    "errorState": "Error state",
+    "page": "Page"
+  },
+  "labels": {
+    "primary": "Primary",
+    "secondary": "Secondary",
+    "ghost": "Ghost",
+    "withIcon": "With icon",
+    "disabled": "Disabled",
+    "disabledReason": "Complete the previous step first.",
+    "block": "Full width",
+    "live": "Live region",
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "walletAddress": "7xKd...9fQ2",
+    "empty": "Empty",
+    "filled": "Filled",
+    "busy": "Busy",
+    "freeUnavailable": "Free interpretation unavailable",
+    "firstStep": "First step",
+    "middleStep": "Middle step",
+    "lastStep": "Last step",
+    "normal": "Normal",
+    "error": "Error",
+    "missingAmount": "Amount missing",
+    "exactly100": "Exactly 100%",
+    "under100": "Under 100%",
+    "over100": "Over 100%",
+    "withRejected": "With a rejected asset",
+    "active": "Active",
+    "rejected": "Rejected",
+    "investDisabled": "Invest disabled with reason",
+    "cash": "Cash",
+    "example": "Example badge",
+    "noBuyRoute": "No buy route"
+  },
+  "sample": {
+    "thesis": "I believe cheaper clean energy will keep growing over the next decade.",
+    "thesisCardTitle": "Clean energy",
+    "thesisCardSummary": "Exposure to fictional assets tied to renewable power.",
+    "notices": {
+      "infoTitle": "Good to know",
+      "infoBody": "This is an informational message.",
+      "warningTitle": "Check this first",
+      "warningBody": "This is a warning message.",
+      "dangerTitle": "Something went wrong",
+      "dangerBody": "This is an error message.",
+      "noTitle": "A message without a title."
+    },
+    "pills": {
+      "valid": "Composition adds up to 100%",
+      "warning": "Weights add up to less than 100%",
+      "danger": "Weights add up to more than 100%",
+      "neutral": "Waiting for input"
+    },
+    "chips": {
+      "neutral": "Volatility",
+      "available": "Buy available",
+      "warning": "Thin liquidity"
+    },
+    "steps": {
+      "thesis": "Thesis",
+      "composition": "Composition",
+      "review": "Review",
+      "activate": "Activate"
+    },
+    "empty": {
+      "title": "No matching assets yet",
+      "description": "We could not find approved instruments for this thesis.",
+      "primary": "Rewrite thesis",
+      "secondary": "Browse examples",
+      "footnote": "Only approved instruments can appear in a composition."
+    },
+    "loading": "Loading your composition...",
+    "error": "We could not load this data. Try again.",
+    "budget": "250",
+    "badWeightError": "Weight must be between 0% and 100%.",
+    "page": "Page content goes here.",
+    "assets": {
+      "solarTicker": "SUNX",
+      "solarName": "Sample Solar Basket",
+      "solarExposure": "Fictional solar generation exposure",
+      "solarWhy": "Matches the renewable power part of the thesis.",
+      "windTicker": "WNDY",
+      "windName": "Sample Wind Token",
+      "windExposure": "Fictional wind generation exposure",
+      "windWhy": "Adds diversification across clean sources.",
+      "cashTicker": "USDC",
+      "cashName": "Cash balance",
+      "cashExposure": "Stable reserve that is not invested",
+      "riskVolatility": "Price volatility",
+      "riskLiquidity": "Liquidity risk",
+      "disabledReason": "Connect a wallet to invest."
+    },
+    "segments": {
+      "solar": "Sample Solar Basket",
+      "wind": "Sample Wind Token",
+      "cash": "Cash",
+      "rejected": "Rejected sample asset"
+    }
+  }
+}

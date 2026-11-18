@@ -1,0 +1,29 @@
+{
+  "header": {
+    "networkLabel": "Network: Solana",
+    "network": "Solana",
+    "connect": "Connect wallet"
+  },
+  "thesisInput": {
+    "label": "Your thesis",
+    "placeholder": "AI will reshape data center infrastructure over the next 5 years, but I don't want to depend on a single company.",
+    "counter": "{{count}} / {{max}}",
+    "interpret": "Interpret",
+    "emptyReason": "Write your thesis to continue",
+    "busyReason": "Interpreting your thesis…",
+    "connectToInterpret": "Connect wallet to interpret"
+  },
+  "thesisCard": {
+    "use": "Use and edit"
+  },
+  "steps": {
+    "label": "{{index}}. {{label}}",
+    "done": "done",
+    "current": "in progress",
+    "pending": "pending",
+    "withState": "{{label}} ({{state}})"
+  },
+  "empty": {
+    "yourThesis": "Your thesis"
+  }
+}

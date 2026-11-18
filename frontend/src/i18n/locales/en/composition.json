@@ -1,0 +1,32 @@
+{
+  "weight": "Weight",
+  "plannedBudget": "Planned budget",
+  "budgetNote": "Not your balance — it's how much you plan to allocate. Nothing is bought yet.",
+  "composition": "Composition",
+  "total": "total",
+  "rejected": "Rejected",
+  "whyItsHere": "Why it's here",
+  "undo": "Undo",
+  "details": "Instrument details",
+  "reject": "Reject",
+  "invest": "Invest",
+  "example": "Example",
+  "amountUnavailable": "Price unavailable",
+  "amountMissing": "—",
+  "availability": {
+    "buy": {
+      "available": "Buy",
+      "no_route": "Approved · no buy route right now",
+      "suspended": "New buys suspended",
+      "restricted": "Buying restricted",
+      "unknown": "Buy availability unknown"
+    },
+    "sell": {
+      "available": "Sell",
+      "no_route": "No sell route",
+      "suspended": "Selling suspended",
+      "restricted": "Selling restricted",
+      "unknown": "Sell availability unknown"
+    }
+  }
+}

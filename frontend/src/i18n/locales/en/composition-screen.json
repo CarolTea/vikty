@@ -1,0 +1,82 @@
+{
+  "title": "How this thesis can be represented",
+  "intro": "These are approved instruments that map to your thesis. Adjust the plan, reject what you don't want, and invest one asset at a time.",
+  "summary": {
+    "title": "Plan summary",
+    "statusValid": "Valid plan: weights add up to 100%",
+    "statusInvalid": "Plan needs changes before you can invest",
+    "statusInconclusive": "Validation was inconclusive",
+    "statusChecking": "Checking your changes…",
+    "statusBudget": "Enter a planned budget to continue"
+  },
+  "issues": {
+    "SUM_NOT_100": "Weights must add up to 100%. They currently add up to a different total.",
+    "WEIGHT_ABOVE_MAX": "{{name}} is above the maximum weight allowed.",
+    "WEIGHT_BELOW_MIN": "{{name}} is below the minimum weight allowed.",
+    "EXCLUSION_VIOLATED": "{{name}} conflicts with something you excluded.",
+    "INSTRUMENT_NOT_APPROVED": "{{name}} is not approved right now.",
+    "INCOMPATIBLE_SUBSTITUTION": "{{name}} can't stand in for the exposure you replaced.",
+    "BUDGET_INVALID": "The planned budget is not valid.",
+    "PARTIAL_REPRESENTATION": "This plan represents only part of your thesis.",
+    "NO_ROUTE": "{{name}} has no buy route right now.",
+    "general": "The plan"
+  },
+  "notices": {
+    "rejectedTitle": "Weights are not redistributed",
+    "rejected": "A rejected asset's weight is simply left out. Adjust the remaining weights yourself or ask for a new proposal.",
+    "limitationsTitle": "What this plan does not cover",
+    "validationFailed": "We couldn't check your changes. Investing is paused until the check works.",
+    "inconclusive": "We couldn't confirm availability for every asset yet, so investing is paused. Try again in a moment."
+  },
+  "invest": {
+    "validating": "Wait for the plan check to finish.",
+    "invalid": "Fix the issues in the summary first.",
+    "inconclusive": "The plan check was inconclusive.",
+    "budget": "Enter a valid planned budget first.",
+    "noRoute": "{{name}} has no buy route right now.",
+    "notApproved": "{{name}} is not available to buy right now.",
+    "working": "Creating your plan…",
+    "failedTitle": "We couldn't create your plan"
+  },
+  "newProposal": {
+    "action": "Ask for a new proposal",
+    "working": "Preparing a new proposal…",
+    "hint": "A new proposal starts from your thesis again and replaces these weights.",
+    "failedTitle": "We couldn't prepare a new proposal"
+  },
+  "panel": {
+    "title": "Instrument details",
+    "close": "Close details",
+    "represents": "What it represents",
+    "issuer": "Issuer",
+    "issuerNature": "Nature: {{nature}}",
+    "rights": "Economic rights",
+    "limitations": "Limitations",
+    "risks": "Risks",
+    "costs": "Costs",
+    "trading": "How it trades",
+    "sources": "Sources",
+    "reviewed": "(reviewed {{date}})",
+    "eligibility": "Eligibility notes",
+    "none": "Nothing listed.",
+    "loading": "Loading instrument details…",
+    "status": {
+      "approved": "Approved",
+      "restricted": "Restricted",
+      "unavailable": "Unavailable"
+    },
+    "statusNote": {
+      "restricted": "This instrument is restricted. New purchases may be limited.",
+      "unavailable": "This instrument is unavailable. You can't buy it right now."
+    },
+    "availability": {
+      "available": "Available",
+      "no_route": "No route right now",
+      "suspended": "Suspended",
+      "restricted": "Restricted",
+      "unknown": "Not checked yet"
+    },
+    "buy": "Buy: {{state}}",
+    "sell": "Sell: {{state}}"
+  }
+}

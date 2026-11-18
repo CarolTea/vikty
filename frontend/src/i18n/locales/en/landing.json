@@ -1,0 +1,99 @@
+{
+  "nav": {
+    "howItWorks": "How it works",
+    "instruments": "Instruments",
+    "control": "Control",
+    "whoFor": "Who it's for",
+    "openApp": "Open app",
+    "label": "Main"
+  },
+  "hero": {
+    "badge": "Built on Solana",
+    "titleStart": "Invest in a thesis,",
+    "titleHighlight": "not a ticker.",
+    "lead": "VicTy turns what you believe about the future into an investment you understand. Describe a belief, see which instruments can represent it and why, and decide what to buy — one asset at a time, from your own wallet.",
+    "start": "Start with a thesis",
+    "howItWorks": "How it works",
+    "trust": {
+      "noWallet": "No wallet to explore",
+      "nonCustodial": "Non-custodial",
+      "youSign": "You sign every trade"
+    }
+  },
+  "example": {
+    "label": "Example",
+    "disclaimer": "Illustrative — not a recommendation",
+    "thesis": "AI will reshape data center infrastructure over the next 5 years, but I don't want to depend on a single company.",
+    "understood": "What we understood",
+    "exposures": ["Semiconductors", "Data centers", "Energy"],
+    "exclusion": "Exclude: single-company risk",
+    "represented": "How it can be represented",
+    "instruments": [
+      { "name": "Instrument A", "exposure": "Semiconductor exposure" },
+      { "name": "Instrument B", "exposure": "Data center exposure" },
+      { "name": "Instrument C", "exposure": "Energy exposure" }
+    ],
+    "footer": "You edit the weights and reject what you don't want.",
+    "total": "= {{total}}"
+  },
+  "problem": {
+    "eyebrow": "The problem",
+    "title": "You have a conviction. A list of tokens doesn't help.",
+    "cards": [
+      { "title": "Which assets represent the idea?", "body": "A belief rarely maps to one token. Finding the ones that actually carry the exposure takes research most people don't have time for." },
+      { "title": "What does this token really represent?", "body": "Issuer, backing, rights, limits. A ticker tells you none of it, and the difference matters." },
+      { "title": "How much of each, and what does it cost?", "body": "Splitting a budget, understanding fees, slippage and routes before signing — without putting everything in one place." }
+    ]
+  },
+  "how": {
+    "eyebrow": "How it works",
+    "title": "From a belief to a position you understand",
+    "lead": "Your wallet only comes in when you decide to buy.",
+    "noWallet": "No wallet",
+    "yourWallet": "Your wallet",
+    "steps": [
+      { "title": "Describe", "body": "Write what you believe in, or start from a suggested thesis." },
+      { "title": "Confirm what we understood", "body": "We show the exposures, exclusions and limits we read. You correct them before any asset is proposed." },
+      { "title": "Review the composition", "body": "Only reviewed instruments, each with what it represents and why it's there. Change weights or reject assets." },
+      { "title": "Invest one asset at a time", "body": "Review each buy — amount, route, fees, slippage — and sign it in your wallet. Then follow your plan against what you hold." }
+    ]
+  },
+  "instruments": {
+    "eyebrow": "Instruments you understand",
+    "title": "Know what you're buying before you buy it",
+    "lead": "Every instrument comes from a small, curated catalog we've reviewed. The AI reads your thesis; it never picks tokens on its own.",
+    "note": "When a thesis can't be represented well enough, we say so — instead of suggesting something that only looks similar.",
+    "rows": [
+      { "term": "What it represents", "value": "The economic exposure the token actually carries." },
+      { "term": "Issuer and rights", "value": "Who issues it and what holding it entitles you to." },
+      { "term": "Why it's here", "value": "How it connects to the thesis you confirmed." },
+      { "term": "Limits and risks", "value": "What it doesn't cover, and its known costs." },
+      { "term": "How it trades", "value": "Whether there's a buy and sell route right now." }
+    ]
+  },
+  "control": {
+    "eyebrow": "You stay in control",
+    "title": "Nothing happens without you",
+    "cards": [
+      { "title": "Your keys, your funds", "body": "VicTy never holds your assets or keys. Every buy and sell is signed in your own wallet." },
+      { "title": "One decision at a time", "body": "No automatic rebalancing and no \"buy all\". You choose what to buy and when." },
+      { "title": "Real numbers only", "body": "Positions come from confirmed transactions. When a price or cost is missing, we show that it's missing." }
+    ]
+  },
+  "audience": {
+    "eyebrow": "Who it's for",
+    "title": "For people who already use a Solana wallet",
+    "needTitle": "What you need",
+    "need": ["Nothing to explore theses and see how they can be represented.", "To invest: a Solana wallet you control, with funds on Solana."],
+    "isntTitle": "What VicTy isn't",
+    "isnt": ["Not a swap screen or a token list.", "Not a robo-advisor: nothing is bought or rebalanced for you.", "Not a custodian.", "Not a promise of returns."]
+  },
+  "cta": {
+    "title": "What do you believe in?",
+    "lead": "No wallet, no funds, no signature until you decide to invest.",
+    "start": "Start with a thesis"
+  },
+  "footer": {
+    "network": "Solana mainnet · Non-custodial"
+  }
+}
